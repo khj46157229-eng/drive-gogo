@@ -478,8 +478,8 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = isBoosting ? 'sawtooth' : 'triangle';
-          osc.frequency.setValueAtTime(isBoosting ? 180 : 85, this.ctx.currentTime);
-          gain.gain.setValueAtTime(0.02 * this.volume, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(isBoosting ? 230 : 115, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.025 * this.volume, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
@@ -664,9 +664,9 @@
     };
 
     const DIFFICULTY_CONFIG = {
-      EASY: { totalTime: 70, goalDistance: 50000, spawnMultiplier: 0.8, shieldChance: 0.5 },
-      NORMAL: { totalTime: 60, goalDistance: 56000, spawnMultiplier: 1.0, shieldChance: 0.35 },
-      HARD: { totalTime: 50, goalDistance: 62000, spawnMultiplier: 1.35, shieldChance: 0.2 },
+      EASY: { totalTime: 70, goalDistance: 80000, spawnMultiplier: 0.85, shieldChance: 0.5 },
+      NORMAL: { totalTime: 60, goalDistance: 96000, spawnMultiplier: 1.1, shieldChance: 0.35 },
+      HARD: { totalTime: 50, goalDistance: 112000, spawnMultiplier: 1.45, shieldChance: 0.2 },
     };
 
     // Global Settings State
@@ -682,7 +682,7 @@
       gameTime: 60,
       totalTime: 60,
       distanceTraveled: 0,
-      goalDistance: 56000,
+      goalDistance: 96000,
       cargoCount: 10,
       initialCargo: 10,
       nearMissCount: 0,
@@ -706,8 +706,8 @@
         width: 62,
         height: 108,
         speed: 0,
-        baseSpeed: 7.5,
-        boostSpeed: 15.5,
+        baseSpeed: 12.5,
+        boostSpeed: 23.0,
         laneX: 0,
         targetLaneX: 0,
         tilt: 0,
@@ -1187,7 +1187,7 @@
       const cfg = DIFFICULTY_CONFIG[currentDifficulty];
       const laneWidth = canvasWidth * 0.46;
       const progressRatio = engine.distanceTraveled / engine.goalDistance;
-      const baseChance = (0.042 + progressRatio * 0.038) * cfg.spawnMultiplier;
+      const baseChance = (0.055 + progressRatio * 0.045) * cfg.spawnMultiplier;
 
       if (Math.random() < baseChance) {
         const types = ['SEDAN', 'TRUCK', 'BARREL', 'BARRICADE', 'PUDDLE', 'CONE'];
@@ -1212,17 +1212,17 @@
         if (type === 'SEDAN') {
           newObs.width = 46;
           newObs.height = 80;
-          newObs.vy = Math.random() > 0.4 ? 2.6 : -1.8;
+          newObs.vy = Math.random() > 0.4 ? 4.5 : -3.5;
           newObs.color = ['#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#eab308'][Math.floor(Math.random() * 5)];
         } else if (type === 'TRUCK') {
           newObs.width = 54;
           newObs.height = 98;
-          newObs.vy = 1.1;
+          newObs.vy = 2.0;
           newObs.color = '#f59e0b';
         } else if (type === 'BARREL') {
           newObs.width = 38;
           newObs.height = 38;
-          newObs.vx = (Math.random() - 0.5) * 4.2;
+          newObs.vx = (Math.random() - 0.5) * 6.5;
         } else if (type === 'BARRICADE') {
           newObs.width = 76;
           newObs.height = 32;
@@ -1237,7 +1237,7 @@
         engine.obstacles.push(newObs);
       }
 
-      if (Math.random() < 0.014) {
+      if (Math.random() < 0.015) {
         const itemType = Math.random() < cfg.shieldChance ? 'SHIELD' : 'BOX';
         engine.items.push({
           id: engine.entityIdCounter++,
@@ -1253,7 +1253,7 @@
     }
 
     function updateHUD() {
-      const speedKmh = Math.round(engine.truck.speed * 8);
+      const speedKmh = Math.round(engine.truck.speed * 8.5);
       speedTextEl.textContent = `${speedKmh} km/h`;
       cargoCountEl.textContent = `${engine.cargoCount} / 10개`;
       nearMissTextEl.textContent = `${engine.nearMissCount}회` + (engine.nearMissCombo > 1 ? ` x${engine.nearMissCombo}!` : '');
@@ -1341,11 +1341,11 @@
       engine.prevRight = engine.keys.Right;
 
       if (!engine.truck.isSpinning) {
-        engine.truck.targetLaneX += moveDir * 7.5;
+        engine.truck.targetLaneX += moveDir * 9.5;
         engine.truck.targetLaneX = Math.max(-maxSteer, Math.min(maxSteer, engine.truck.targetLaneX));
       }
-      engine.truck.laneX += (engine.truck.targetLaneX - engine.truck.laneX) * 0.26;
-      engine.truck.tilt = (engine.truck.targetLaneX - engine.truck.laneX) * 0.055;
+      engine.truck.laneX += (engine.truck.targetLaneX - engine.truck.laneX) * 0.32;
+      engine.truck.tilt = (engine.truck.targetLaneX - engine.truck.laneX) * 0.06;
 
       if (Math.abs(engine.truck.targetLaneX - engine.truck.laneX) > 8 || isBoosting) {
         engine.tireTracks.push({
@@ -1367,19 +1367,19 @@
       }
 
       const timeSinceLastDrop = now - engine.lastCargoDropTime;
-      if (isBoosting && timeSinceLastDrop > 1800) {
+      if (isBoosting && timeSinceLastDrop > 1500) {
         engine.lastCargoDropTime = now;
         dropCargo('부스터 과속 덜컹!');
       }
 
-      if (engine.turnChangeCounter > 4 && timeSinceLastDrop > 1200) {
+      if (engine.turnChangeCounter > 4 && timeSinceLastDrop > 1000) {
         engine.turnChangeCounter = 0;
         engine.lastCargoDropTime = now;
         dropCargo('급회전 차체 흔들림!');
       }
 
-      engine.roadOffset = (engine.roadOffset + currentSpeed * 2.3) % 40;
-      engine.sideSceneryOffset = (engine.sideSceneryOffset + currentSpeed * 1.6) % 120;
+      engine.roadOffset = (engine.roadOffset + currentSpeed * 2.8) % 40;
+      engine.sideSceneryOffset = (engine.sideSceneryOffset + currentSpeed * 2.1) % 120;
       spawnEntities(canvas.width);
 
       const truckBounds = {
@@ -1392,8 +1392,8 @@
       // Item Pickup
       for (let i = engine.items.length - 1; i >= 0; i--) {
         const item = engine.items[i];
-        item.y += currentSpeed * 1.5;
-        item.animFrame += 0.1;
+        item.y += currentSpeed * 1.65;
+        item.animFrame += 0.12;
 
         const itemBounds = {
           left: engine.truck.x + item.x - item.width / 2,
@@ -1460,9 +1460,9 @@
       // Obstacle Collision & Near Miss
       for (let i = engine.obstacles.length - 1; i >= 0; i--) {
         const obs = engine.obstacles[i];
-        obs.y += currentSpeed * 1.5 + obs.vy;
+        obs.y += currentSpeed * 1.65 + obs.vy;
         obs.x += obs.vx;
-        obs.animFrame += 0.1;
+        obs.animFrame += 0.12;
 
         if (obs.type === 'BARREL') {
           if (Math.abs(obs.x) > maxSteer) obs.vx *= -1;
@@ -1650,6 +1650,20 @@
       ctx.lineTo(centerX + roadWidth / 6, height);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Speed streaks when boosting
+      if (engine.keys.Boost) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
+        ctx.lineWidth = 2.5;
+        for (let s = 0; s < 8; s++) {
+          const sx = leftMargin + 10 + Math.random() * (roadWidth - 20);
+          const sy = Math.random() * height;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx, sy + 40 + Math.random() * 50);
+          ctx.stroke();
+        }
+      }
 
       // 5. Goal Line Checkered Flag
       const remainingDist = engine.goalDistance - engine.distanceTraveled;
