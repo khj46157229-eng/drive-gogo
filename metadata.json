@@ -1,0 +1,6 @@
+{
+  "name": "이삿짐 운반 대작전",
+  "description": "60초 안에 이삿짐을 안전하게 목적지까지 운반하는 흥미진진한 아케이드 트럭 드라이빙 게임",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

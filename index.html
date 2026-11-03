@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>이삿짐 운반 대작전</title>
+  <meta name="description" content="60초 안에 이삿짐을 안전하게 목적지까지 운반하는 흥미진진한 아케이드 트럭 드라이빙 게임" />
+  <meta property="og:title" content="이삿짐 운반 대작전" />
+  <meta property="og:description" content="60초 안에 이삿짐을 안전하게 목적지까지 운반하는 흥미진진한 아케이드 트럭 드라이빙 게임" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Google Fonts: Jua, Noto Sans KR, Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            jua: ['Jua', 'cursive', 'sans-serif'],
+            sans: ['"Noto Sans KR"', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-jua {
+      font-family: 'Jua', cursive, sans-serif;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-8px, 6px); }
+      40% { transform: translate(8px, -6px); }
+      60% { transform: translate(-5px, 3px); }
+      80% { transform: translate(5px, -3px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .shake {
+      animation: shake 0.28s ease-in-out;
+    }
+
+    .arcade-glow {
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.75), 0 0 20px rgba(245, 158, 11, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-start p-2 sm:p-4 md:p-6 overflow-x-hidden antialiased">
+
+  <!-- Top Bar Navigation -->
+  <header class="w-full max-w-4xl flex items-center justify-between gap-3 sm:gap-8 px-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl mb-4">
+    <!-- Zone 1: Brand Wordmark -->
+    <div class="flex items-center gap-2.5 whitespace-nowrap shrink-0">
+      <span class="text-2xl sm:text-3xl animate-bounce">🚚</span>
+      <span class="font-jua text-lg sm:text-2xl text-amber-400 arcade-glow tracking-wide">
+        이삿짐 운반 대작전
+      </span>
+    </div>
+
+    <!-- Zone 2: Navigation Links -->
+    <nav class="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium">
+      <button id="navGame" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">
+        게임 플레이
+      </button>
+      <button id="navSettings" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-slate-200 flex items-center gap-1">
+        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+        <span>설정</span>
+      </button>
+      <button id="navLeaderboard" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-slate-200 flex items-center gap-1">
+        <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
+        <span>기록실</span>
+      </button>
+      <button id="navRules" class="nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-slate-200 flex items-center gap-1">
+        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+        <span>도움말</span>
+      </button>
+    </nav>
+
+    <!-- Zone 3: Primary Action (Sound Mute/Unmute) -->
+    <div class="flex items-center gap-2 shrink-0">
+      <button id="muteBtn" class="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700" title="음향 켜기/끄기" aria-label="음향 토글">
+        <i id="muteIcon" data-lucide="volume-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- TAB 1: GAME VIEW -->
+  <main id="gameTab" class="w-full max-w-4xl bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-800 flex flex-col items-center">
+    
+    <!-- Top HUD Header -->
+    <div class="w-full bg-slate-900/95 border-b-2 border-slate-800 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 z-10">
+      <!-- Speedometer -->
+      <div class="flex items-center space-x-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+        <i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">속도</div>
+          <div id="speedText" class="font-jua text-base sm:text-lg text-yellow-400 leading-none">0 km/h</div>
+        </div>
+      </div>
+
+      <!-- Cargo Counter -->
+      <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+        <i data-lucide="package" class="w-4 h-4 text-emerald-400"></i>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">남은 이삿짐</div>
+          <div id="cargoCount" class="font-jua text-base sm:text-lg text-emerald-400 leading-none">10 / 10개</div>
+        </div>
+      </div>
+
+      <!-- Near Miss Counter -->
+      <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+        <i id="nearMissFlame" data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">아슬아슬 피하기</div>
+          <div id="nearMissText" class="font-jua text-base sm:text-lg text-amber-400 leading-none">0회</div>
+        </div>
+      </div>
+
+      <!-- Shield Indicator -->
+      <div id="shieldIndicator" class="hidden flex items-center space-x-1.5 bg-cyan-950/90 px-3 py-1.5 rounded-xl border border-cyan-500/60 shadow-lg shadow-cyan-500/20">
+        <i data-lucide="shield" class="w-4 h-4 text-cyan-300 animate-pulse"></i>
+        <span class="text-xs font-bold text-cyan-300">보호막 활성</span>
+      </div>
+
+      <!-- Timer -->
+      <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+        <i id="timerIcon" data-lucide="clock" class="w-4 h-4 text-cyan-400"></i>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">제한시간</div>
+          <div id="timerText" class="font-jua text-base sm:text-lg text-cyan-400 leading-none">60s</div>
+        </div>
+      </div>
+
+      <!-- Pause Button -->
+      <button id="pauseBtn" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700" title="일시정지 (P / Esc)" aria-label="일시정지">
+        <i id="pauseIcon" data-lucide="pause" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Progress Bar Track -->
+    <div class="w-full bg-slate-950 px-4 py-2 border-b border-slate-800 flex items-center space-x-3 z-10">
+      <span class="text-xs text-slate-400 font-bold uppercase shrink-0">출발 🚚</span>
+      <div class="relative flex-1 bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+        <div id="progressBar" class="bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 h-full w-0 transition-all duration-75"></div>
+      </div>
+      <span class="text-xs text-amber-400 font-bold uppercase shrink-0">🏡 목적지</span>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvasWrapper" class="relative w-full flex justify-center items-center bg-slate-950 overflow-hidden" style="height: 520px;">
+      <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+      <!-- Overlay Screen: Start / Ready -->
+      <div id="startOverlay" class="absolute inset-0 bg-slate-950/92 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+        <div class="text-5xl sm:text-6xl mb-2 animate-bounce">🚚📦</div>
+        <h2 class="font-jua text-3xl sm:text-5xl text-amber-400 arcade-glow mb-2">
+          이삿짐 운반 대작전!
+        </h2>
+        <p class="text-slate-300 text-xs sm:text-sm max-w-md mb-5 leading-relaxed">
+          <span id="startOverlayTimeText">60초</span> 안에 목적지까지 안전하게 이삿짐을 운반하세요!<br />
+          <span class="text-cyan-300 font-bold">📦 상자</span>로 잃어버린 짐을 복구하고, <span class="text-amber-300 font-bold">🛡️ 쉴드</span>로 1회 충돌을 방어하세요.<br />
+          <span class="text-rose-400 font-medium">급회전, 장애물 충돌, 부스터 남발</span> 시 상자가 낙하합니다!
+        </p>
+
+        <!-- Difficulty Quick Selector -->
+        <div class="flex items-center gap-2 mb-5">
+          <span class="text-xs text-slate-400 font-medium mr-1">난이도:</span>
+          <button id="diffEasyBtn" class="diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200">
+            쉬움 (70초)
+          </button>
+          <button id="diffNormalBtn" class="diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-amber-500 text-slate-950 border-amber-300 shadow-md">
+            보통 (60초)
+          </button>
+          <button id="diffHardBtn" class="diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200">
+            하드 러시 (50초)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 max-w-xs w-full mb-6 text-xs text-slate-300">
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700 flex flex-col items-center">
+            <span class="font-bold text-amber-400 mb-0.5">← / → (A / D)</span>
+            <span>차선 이동 및 급회전</span>
+          </div>
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700 flex flex-col items-center">
+            <span class="font-bold text-cyan-400 mb-0.5">Spacebar</span>
+            <span>부스터 터보 가속</span>
+          </div>
+        </div>
+
+        <button id="startButton" class="font-jua text-xl sm:text-2xl px-10 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-2xl shadow-xl transform transition active:scale-95 border-2 border-amber-300 flex items-center gap-2 cursor-pointer">
+          <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+          <span>운전 시작하기 (Space / Enter)</span>
+        </button>
+      </div>
+
+      <!-- Overlay Screen: Paused -->
+      <div id="pauseOverlay" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20">
+        <div class="text-4xl mb-2">⏸️</div>
+        <h2 class="font-jua text-3xl sm:text-4xl text-amber-400 mb-3">잠시 멈춤</h2>
+        <p class="text-slate-300 text-sm mb-6">숨을 고르고 목적지까지 다시 출발하세요!</p>
+        <div class="flex gap-3">
+          <button id="resumeButton" class="font-jua text-lg px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg border border-emerald-400 transition cursor-pointer">
+            계속 운전하기
+          </button>
+          <button id="restartFromPauseButton" class="font-jua text-lg px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl border border-slate-600 transition cursor-pointer">
+            처음부터 재도전
+          </button>
+        </div>
+      </div>
+
+      <!-- Overlay Screen: Result (Clear / Game Over) -->
+      <div id="resultOverlay" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+        <div id="gradeBadge" class="font-jua text-7xl sm:text-8xl mb-1 drop-shadow-xl text-amber-400">S</div>
+        <div id="resultEmoji" class="text-4xl sm:text-5xl mb-2">🎉</div>
+        <h2 id="resultTitle" class="font-jua text-3xl sm:text-4xl mb-2 text-amber-400">목적지 도착 성공!</h2>
+        <p id="resultDesc" class="text-slate-300 text-xs sm:text-sm mb-5 max-w-sm">안전하게 목적지에 도착했습니다.</p>
+
+        <div class="grid grid-cols-3 gap-2 max-w-md w-full mb-6">
+          <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">남은 이삿짐</div>
+            <div id="finalCargo" class="font-jua text-2xl text-emerald-400">8개</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">아슬아슬 회피</div>
+            <div id="finalNearMiss" class="font-jua text-2xl text-amber-400">5회</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl">
+            <div class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">남은 시간</div>
+            <div id="finalTime" class="font-jua text-2xl text-cyan-400">12s</div>
+          </div>
+        </div>
+
+        <button id="restartButton" class="font-jua text-xl px-9 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-2xl shadow-xl border-2 border-amber-300 transform transition active:scale-95 flex items-center gap-2 cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          <span>다시 도전하기 (R)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- On-Screen Mobile & Touch Interactive Controls -->
+    <div class="w-full bg-slate-900/95 border-t border-slate-800 p-3 flex items-center justify-between gap-2">
+      <!-- Steering Left / Right -->
+      <div class="flex items-center gap-2">
+        <button id="touchLeftBtn" class="w-14 h-14 bg-slate-800 active:bg-amber-500 active:text-slate-950 text-slate-200 border-2 border-slate-700 active:border-amber-400 rounded-2xl flex items-center justify-center font-jua text-2xl shadow-md transition-transform active:scale-95 select-none cursor-pointer" aria-label="왼쪽 이동">
+          ◀
+        </button>
+        <button id="touchRightBtn" class="w-14 h-14 bg-slate-800 active:bg-amber-500 active:text-slate-950 text-slate-200 border-2 border-slate-700 active:border-amber-400 rounded-2xl flex items-center justify-center font-jua text-2xl shadow-md transition-transform active:scale-95 select-none cursor-pointer" aria-label="오른쪽 이동">
+          ▶
+        </button>
+      </div>
+
+      <!-- Horn Button -->
+      <button id="hornBtn" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-slate-950 text-amber-400 border border-slate-700 rounded-2xl font-jua text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer" title="경적 울리기 (H)">
+        <i data-lucide="megaphone" class="w-4 h-4"></i>
+        <span>경적 (H)</span>
+      </button>
+
+      <!-- Boost Turbo Button -->
+      <button id="touchBoostBtn" class="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 active:from-cyan-400 active:to-blue-400 text-white font-jua text-base sm:text-lg border border-cyan-400 rounded-2xl flex items-center gap-2 shadow-lg shadow-cyan-500/20 active:scale-95 select-none cursor-pointer">
+        <i data-lucide="zap" class="w-5 h-5 text-yellow-300 animate-pulse"></i>
+        <span>부스터 (Space)</span>
+      </button>
+    </div>
+
+    <!-- Footer Guide -->
+    <div class="w-full bg-slate-950 border-t border-slate-800 px-4 py-2 text-center text-xs text-slate-400 flex flex-wrap justify-around gap-2">
+      <span>🕹️ 조작: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">A / ←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">D / →</kbd></span>
+      <span>⚡ 부스터: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">Space</kbd></span>
+      <span>📢 경적: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">H</kbd></span>
+      <span>⏸️ 일시정지: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">P / Esc</kbd></span>
+      <span>🔄 재도전: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">R</kbd></span>
+    </div>
+  </main>
+
+  <!-- TAB 2: SETTINGS VIEW -->
+  <section id="settingsTab" class="hidden w-full max-w-4xl bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl">
+    <div class="flex items-center gap-2.5 mb-6 border-b border-slate-800 pb-4">
+      <i data-lucide="sliders" class="w-6 h-6 text-amber-400"></i>
+      <h2 class="font-jua text-2xl text-amber-400">게임 환경 & 트럭 커스텀</h2>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Truck Color Customization -->
+      <div>
+        <label class="block text-sm font-bold text-slate-300 mb-3">🚚 트럭 색상 선택</label>
+        <div id="truckColorPicker" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <!-- Dynamically populated buttons -->
+        </div>
+      </div>
+
+      <!-- Difficulty Setting -->
+      <div>
+        <label class="block text-sm font-bold text-slate-300 mb-3">🎯 난이도 설정</label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button id="setDiffEasy" class="p-4 rounded-xl border text-left transition cursor-pointer border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+            <div class="font-jua text-lg mb-1 text-emerald-400">초급 운전자 (쉬움)</div>
+            <div class="text-xs text-slate-400">제한시간 70초, 장애물 밀도 20% 감소, 보호막 아이템 다수 등장</div>
+          </button>
+          <button id="setDiffNormal" class="p-4 rounded-xl border text-left transition cursor-pointer border-amber-500 bg-amber-950/40 text-amber-300">
+            <div class="font-jua text-lg mb-1 text-amber-400">정규 배달 (보통)</div>
+            <div class="text-xs text-slate-400">제한시간 60초, 표준 교통량 및 장애물 밸런스, 기본 규칙</div>
+          </button>
+          <button id="setDiffHard" class="p-4 rounded-xl border text-left transition cursor-pointer border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700">
+            <div class="font-jua text-lg mb-1 text-rose-400">초특급 배송 (하드 러시)</div>
+            <div class="text-xs text-slate-400">제한시간 50초, 고속 트래픽 + 장애물 35% 증가, 극한의 집중력</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sound Volume Setting -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-bold text-slate-300">🔊 효과음 볼륨</label>
+          <span id="volumePercentText" class="text-xs text-amber-400 font-bold">60%</span>
+        </div>
+        <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="0.6" class="w-full accent-amber-500 h-2 bg-slate-800 rounded-lg cursor-pointer" />
+      </div>
+
+      <div class="pt-4 flex justify-end">
+        <button id="saveSettingsBtn" class="font-jua text-lg px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition shadow-lg cursor-pointer">
+          설정 적용하고 게임 시작
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 3: LEADERBOARD VIEW -->
+  <section id="leaderboardTab" class="hidden w-full max-w-4xl bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+      <div class="flex items-center gap-2.5">
+        <i data-lucide="trophy" class="w-6 h-6 text-amber-400"></i>
+        <h2 class="font-jua text-2xl text-amber-400">배달 명예의 전당 (최근 기록)</h2>
+      </div>
+      <button id="clearRecordsBtn" class="text-xs text-rose-400 hover:text-rose-300 underline cursor-pointer">
+        기록 초기화
+      </button>
+    </div>
+
+    <div id="recordsEmpty" class="text-center py-12 text-slate-500">
+      <i data-lucide="package" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+      <p class="font-jua text-lg text-slate-400">아직 등록된 배달 기록이 없습니다.</p>
+      <p class="text-xs mt-1">게임을 플레이하고 첫 완주 기록을 남겨보세요!</p>
+      <button id="leaderboardPlayBtn" class="mt-4 font-jua text-sm px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl cursor-pointer">
+        지금 운전하기
+      </button>
+    </div>
+
+    <div id="recordsTableWrapper" class="hidden overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+            <th class="py-2.5 px-3">등급</th>
+            <th class="py-2.5 px-3">결과</th>
+            <th class="py-2.5 px-3">남은 이삿짐</th>
+            <th class="py-2.5 px-3">아슬아슬 회피</th>
+            <th class="py-2.5 px-3">남은 시간</th>
+            <th class="py-2.5 px-3">난이도</th>
+            <th class="py-2.5 px-3">일시</th>
+          </tr>
+        </thead>
+        <tbody id="recordsTableBody" class="divide-y divide-slate-800">
+          <!-- Populated dynamically via JS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TAB 4: RULES VIEW -->
+  <section id="rulesTab" class="hidden w-full max-w-4xl bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl">
+    <div class="flex items-center gap-2.5 mb-6 border-b border-slate-800 pb-4">
+      <i data-lucide="help-circle" class="w-6 h-6 text-amber-400"></i>
+      <h2 class="font-jua text-2xl text-amber-400">게임 규칙 & 고득점 비법</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <div class="font-jua text-base text-amber-400 mb-2 flex items-center gap-2">
+          <span>📦</span>
+          <span>이삿짐 분실 조건</span>
+        </div>
+        <ul class="space-y-1.5 text-xs text-slate-400 list-disc list-inside">
+          <li><strong class="text-slate-200">장애물 충돌:</strong> 세단, 트럭, 드럼통, 바리케이드 충돌 시 -1개 낙하</li>
+          <li><strong class="text-slate-200">급회전 쏠림:</strong> 짧은 시간 내 좌우로 연속 회전하면 관성으로 -1개 낙하</li>
+          <li><strong class="text-slate-200">부스터 과속:</strong> 스페이스바 부스터를 1.6초 이상 연속 가속 시 -1개 낙하</li>
+          <li><strong class="text-slate-200">오일 웅덩이:</strong> 밟으면 360도 스핀하며 속도 급감 및 -1개 낙하</li>
+        </ul>
+      </div>
+
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <div class="font-jua text-base text-emerald-400 mb-2 flex items-center gap-2">
+          <span>✨</span>
+          <span>아이템 및 특수 액션</span>
+        </div>
+        <ul class="space-y-1.5 text-xs text-slate-400 list-disc list-inside">
+          <li><strong class="text-emerald-300">📦 상자 아이템:</strong> 먹으면 잃어버렸던 이삿짐 1개를 즉시 복구!</li>
+          <li><strong class="text-cyan-300">🛡️ 보호막 아이템:</strong> 충돌이나 낙하 1회를 완벽하게 방어!</li>
+          <li><strong class="text-amber-300">⚡ NEAR MISS:</strong> 장애물 옆을 간발의 차로 스쳐 지나가면 콤보 획득!</li>
+          <li><strong class="text-yellow-300">📢 경적(H):</strong> 앞길을 막는 세단을 앞으로 이동시켜 길 확보 가능!</li>
+        </ul>
+      </div>
+
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <div class="font-jua text-base text-cyan-400 mb-2 flex items-center gap-2">
+          <i data-lucide="award" class="w-4 h-4 text-cyan-400"></i>
+          <span>최종 평가 등급 (S ~ F)</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div><span class="text-amber-400 font-bold">S 등급:</span> 남은 이삿짐 9~10개 (이사의 달인)</div>
+          <div><span class="text-emerald-400 font-bold">A 등급:</span> 남은 이삿짐 7~8개 (베테랑 기사)</div>
+          <div><span class="text-cyan-400 font-bold">B 등급:</span> 남은 이삿짐 4~6개 (안전 운전자)</div>
+          <div><span class="text-indigo-400 font-bold">C 등급:</span> 남은 이삿짐 1~3개 (초보 배달원)</div>
+          <div><span class="text-rose-400 font-bold">F 등급:</span> 이삿짐 전멸 또는 제한시간 초과</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+        <div>
+          <div class="font-jua text-base text-yellow-400 mb-2 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>S랭크 달성 꿀팁</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            부스터는 직선 구간에서 1초씩 끊어서 짧게 사용하는 것이 안전합니다.
+            드럼통은 좌우로 튕겨 다니므로 거리를 두고 피하고, 오일 웅덩이는 차선 중앙을 유지해 피하세요!
+          </p>
+        </div>
+        <button id="rulesPlayBtn" class="mt-3 font-jua text-sm py-2 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold transition text-center cursor-pointer">
+          이삿짐 운반하러 가기 🚚
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sound Engine (Web Audio API) -->
+  <script>
+    class SoundEffectsManager {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+        this.volume = 0.6;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+      setMuted(muted) {
+        this.isMuted = muted;
+      }
+      setVolume(vol) {
+        this.volume = Math.max(0, Math.min(1, vol));
+      }
+      playEngine(isBoosting) {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = isBoosting ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(isBoosting ? 180 : 85, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.02 * this.volume, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.09);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        } catch (e) {}
+      }
+      playDrop() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(360, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(55, this.ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.35 * this.volume, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.25);
+        } catch (e) {}
+      }
+      playHit() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 0.28);
+          gain.gain.setValueAtTime(0.45 * this.volume, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.28);
+        } catch (e) {}
+      }
+      playShieldAbsorb() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.3 * this.volume, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.3);
+        } catch (e) {}
+      }
+      playItemPickup(isShield) {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const notes = isShield ? [523.25, 659.25, 783.99, 1046.5] : [440, 554.37, 659.25, 880];
+          notes.forEach((freq, idx) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const startTime = this.ctx.currentTime + idx * 0.055;
+            gain.gain.setValueAtTime(0.16 * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.16);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.16);
+          });
+        } catch (e) {}
+      }
+      playNearMiss(combo) {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const baseFreq = 800 + Math.min(600, (combo - 1) * 200);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, this.ctx.currentTime + 0.18);
+          gain.gain.setValueAtTime(0.2 * this.volume, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.18);
+        } catch (e) {}
+      }
+      playScreech() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(680, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(320, this.ctx.currentTime + 0.28);
+          gain.gain.setValueAtTime(0.18 * this.volume, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.28);
+        } catch (e) {}
+      }
+      playHorn() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const freqs = [392, 440];
+          freqs.forEach(freq => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.15 * this.volume, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.35);
+          });
+        } catch (e) {}
+      }
+      playGoal() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const fanfare = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+          fanfare.forEach((freq, idx) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const startTime = this.ctx.currentTime + idx * 0.1;
+            gain.gain.setValueAtTime(0.2 * this.volume, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.35);
+          });
+        } catch (e) {}
+      }
+      playGameOver() {
+        if (this.isMuted || !this.ctx) return;
+        try {
+          const notes = [440, 392, 349.23, 293.66];
+          notes.forEach((freq, idx) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            const startTime = this.ctx.currentTime + idx * 0.14;
+            gain.gain.setValueAtTime(0.25 * this.volume, startTime);
+            gain.gain.linearRampToValueAtTime(0.01, startTime + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.3);
+          });
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEffectsManager();
+  </script>
+
+  <!-- Main Game Engine & Controller Script -->
+  <script>
+    // Configuration Maps
+    const TRUCK_COLOR_MAP = {
+      blue: { name: '로열 블루', hex: '#2563eb', light: '#93c5fd', body: '#1d4ed8' },
+      amber: { name: '선셋 앰버', hex: '#d97706', light: '#fde68a', body: '#b45309' },
+      emerald: { name: '에코 민트', hex: '#059669', light: '#a7f3d0', body: '#047857' },
+      violet: { name: '사이버 퍼플', hex: '#7c3aed', light: '#ddd6fe', body: '#6d28d9' },
+      rose: { name: '레이싱 레드', hex: '#e11d48', light: '#fecdd3', body: '#be123c' },
+    };
+
+    const DIFFICULTY_CONFIG = {
+      EASY: { totalTime: 70, goalDistance: 50000, spawnMultiplier: 0.8, shieldChance: 0.5 },
+      NORMAL: { totalTime: 60, goalDistance: 56000, spawnMultiplier: 1.0, shieldChance: 0.35 },
+      HARD: { totalTime: 50, goalDistance: 62000, spawnMultiplier: 1.35, shieldChance: 0.2 },
+    };
+
+    // Global Settings State
+    let currentDifficulty = 'NORMAL';
+    let currentTruckColor = 'blue';
+    let isMuted = false;
+    let volume = 0.6;
+    let records = [];
+
+    // Game Engine State
+    const engine = {
+      gameState: 'START', // 'START' | 'PLAYING' | 'PAUSED' | 'CLEAR' | 'GAMEOVER'
+      gameTime: 60,
+      totalTime: 60,
+      distanceTraveled: 0,
+      goalDistance: 56000,
+      cargoCount: 10,
+      initialCargo: 10,
+      nearMissCount: 0,
+      nearMissCombo: 0,
+      lastNearMissTime: 0,
+      keys: { Left: false, Right: false, Boost: false },
+      prevLeft: false,
+      prevRight: false,
+      turnChangeCounter: 0,
+      lastCargoDropTime: 0,
+      roadOffset: 0,
+      sideSceneryOffset: 0,
+      obstacles: [],
+      items: [],
+      particles: [],
+      fallingCargos: [],
+      tireTracks: [],
+      truck: {
+        x: 0,
+        y: 0,
+        width: 62,
+        height: 108,
+        speed: 0,
+        baseSpeed: 7.5,
+        boostSpeed: 15.5,
+        laneX: 0,
+        targetLaneX: 0,
+        tilt: 0,
+        spinAngle: 0,
+        isSpinning: false,
+        spinTimer: 0,
+        hasShield: false,
+      },
+      entityIdCounter: 1,
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameTab = document.getElementById('gameTab');
+    const settingsTab = document.getElementById('settingsTab');
+    const leaderboardTab = document.getElementById('leaderboardTab');
+    const rulesTab = document.getElementById('rulesTab');
+
+    const navGame = document.getElementById('navGame');
+    const navSettings = document.getElementById('navSettings');
+    const navLeaderboard = document.getElementById('navLeaderboard');
+    const navRules = document.getElementById('navRules');
+
+    const speedTextEl = document.getElementById('speedText');
+    const cargoCountEl = document.getElementById('cargoCount');
+    const nearMissTextEl = document.getElementById('nearMissText');
+    const nearMissFlameEl = document.getElementById('nearMissFlame');
+    const shieldIndicatorEl = document.getElementById('shieldIndicator');
+    const timerTextEl = document.getElementById('timerText');
+    const timerIconEl = document.getElementById('timerIcon');
+    const progressBarEl = document.getElementById('progressBar');
+
+    const startOverlay = document.getElementById('startOverlay');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+    const resultOverlay = document.getElementById('resultOverlay');
+
+    const startButton = document.getElementById('startButton');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeButton = document.getElementById('resumeButton');
+    const restartFromPauseButton = document.getElementById('restartFromPauseButton');
+    const restartButton = document.getElementById('restartButton');
+    const hornBtn = document.getElementById('hornBtn');
+
+    const muteBtn = document.getElementById('muteBtn');
+    const muteIcon = document.getElementById('muteIcon');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumePercentText = document.getElementById('volumePercentText');
+
+    const gradeBadgeEl = document.getElementById('gradeBadge');
+    const resultEmojiEl = document.getElementById('resultEmoji');
+    const resultTitleEl = document.getElementById('resultTitle');
+    const resultDescEl = document.getElementById('resultDesc');
+    const finalCargoEl = document.getElementById('finalCargo');
+    const finalNearMissEl = document.getElementById('finalNearMiss');
+    const finalTimeEl = document.getElementById('finalTime');
+
+    // Load LocalStorage Records
+    try {
+      const saved = localStorage.getItem('cargo_game_records');
+      if (saved) records = JSON.parse(saved);
+    } catch (e) {}
+
+    function saveRecord(record) {
+      const newRecord = {
+        ...record,
+        id: Date.now().toString(),
+        date: new Date().toLocaleDateString('ko-KR', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+      records = [newRecord, ...records].slice(0, 15);
+      try {
+        localStorage.setItem('cargo_game_records', JSON.stringify(records));
+      } catch (e) {}
+      renderLeaderboard();
+    }
+
+    // Tab Navigation
+    function showTab(tabName) {
+      [gameTab, settingsTab, leaderboardTab, rulesTab].forEach(t => t.classList.add('hidden'));
+      [navGame, navSettings, navLeaderboard, navRules].forEach(b => {
+        b.className = 'nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 text-slate-400 hover:text-slate-200 flex items-center gap-1';
+      });
+
+      if (tabName === 'GAME') {
+        gameTab.classList.remove('hidden');
+        navGame.className = 'nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center gap-1';
+        resizeCanvas();
+      } else if (tabName === 'SETTINGS') {
+        settingsTab.classList.remove('hidden');
+        navSettings.className = 'nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center gap-1';
+      } else if (tabName === 'LEADERBOARD') {
+        leaderboardTab.classList.remove('hidden');
+        navLeaderboard.className = 'nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center gap-1';
+        renderLeaderboard();
+      } else if (tabName === 'RULES') {
+        rulesTab.classList.remove('hidden');
+        navRules.className = 'nav-btn px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 flex items-center gap-1';
+      }
+      lucide.createIcons();
+    }
+
+    navGame.addEventListener('click', () => showTab('GAME'));
+    navSettings.addEventListener('click', () => showTab('SETTINGS'));
+    navLeaderboard.addEventListener('click', () => showTab('LEADERBOARD'));
+    navRules.addEventListener('click', () => showTab('RULES'));
+    document.getElementById('leaderboardPlayBtn').addEventListener('click', () => { showTab('GAME'); startGame(); });
+    document.getElementById('rulesPlayBtn').addEventListener('click', () => { showTab('GAME'); startGame(); });
+    document.getElementById('saveSettingsBtn').addEventListener('click', () => { showTab('GAME'); startGame(); });
+
+    // Sound Controls
+    muteBtn.addEventListener('click', () => {
+      sound.init();
+      isMuted = !isMuted;
+      sound.setMuted(isMuted);
+      muteBtn.className = isMuted
+        ? 'p-2 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-xl transition border border-slate-700'
+        : 'p-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition border border-slate-700';
+      muteIcon.setAttribute('data-lucide', isMuted ? 'volume-x' : 'volume-2');
+      lucide.createIcons();
+    });
+
+    volumeSlider.addEventListener('input', (e) => {
+      volume = parseFloat(e.target.value);
+      sound.setVolume(volume);
+      volumePercentText.textContent = `${Math.round(volume * 100)}%`;
+    });
+
+    // Truck Color Picker UI setup
+    const truckColorPickerEl = document.getElementById('truckColorPicker');
+    function setupTruckColorPicker() {
+      truckColorPickerEl.innerHTML = '';
+      Object.keys(TRUCK_COLOR_MAP).forEach((key) => {
+        const c = TRUCK_COLOR_MAP[key];
+        const isSelected = currentTruckColor === key;
+        const btn = document.createElement('button');
+        btn.className = `p-3 rounded-xl border flex flex-col items-center gap-2 transition cursor-pointer ${
+          isSelected ? 'border-amber-400 bg-slate-800 shadow-lg shadow-amber-500/10' : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+        }`;
+        btn.innerHTML = `
+          <div class="w-8 h-8 rounded-full border border-white/20" style="background-color: ${c.hex};"></div>
+          <span class="text-xs font-bold ${isSelected ? 'text-amber-400' : 'text-slate-400'}">${c.name}</span>
+        `;
+        btn.addEventListener('click', () => {
+          currentTruckColor = key;
+          setupTruckColorPicker();
+        });
+        truckColorPickerEl.appendChild(btn);
+      });
+    }
+    setupTruckColorPicker();
+
+    // Difficulty Settings Buttons
+    function updateDifficultyUI() {
+      const cfg = DIFFICULTY_CONFIG[currentDifficulty];
+      document.getElementById('startOverlayTimeText').textContent = `${cfg.totalTime}초`;
+
+      // In Settings
+      ['setDiffEasy', 'setDiffNormal', 'setDiffHard'].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'p-4 rounded-xl border text-left transition cursor-pointer border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700';
+      });
+      if (currentDifficulty === 'EASY') document.getElementById('setDiffEasy').className = 'p-4 rounded-xl border text-left transition cursor-pointer border-emerald-500 bg-emerald-950/40 text-emerald-300';
+      if (currentDifficulty === 'NORMAL') document.getElementById('setDiffNormal').className = 'p-4 rounded-xl border text-left transition cursor-pointer border-amber-500 bg-amber-950/40 text-amber-300';
+      if (currentDifficulty === 'HARD') document.getElementById('setDiffHard').className = 'p-4 rounded-xl border text-left transition cursor-pointer border-rose-500 bg-rose-950/40 text-rose-300';
+
+      // In Start Overlay
+      ['diffEasyBtn', 'diffNormalBtn', 'diffHardBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200 cursor-pointer';
+      });
+      if (currentDifficulty === 'EASY') document.getElementById('diffEasyBtn').className = 'diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-amber-500 text-slate-950 border-amber-300 shadow-md cursor-pointer';
+      if (currentDifficulty === 'NORMAL') document.getElementById('diffNormalBtn').className = 'diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-amber-500 text-slate-950 border-amber-300 shadow-md cursor-pointer';
+      if (currentDifficulty === 'HARD') document.getElementById('diffHardBtn').className = 'diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-amber-500 text-slate-950 border-amber-300 shadow-md cursor-pointer';
+    }
+
+    document.getElementById('diffEasyBtn').addEventListener('click', () => { currentDifficulty = 'EASY'; updateDifficultyUI(); });
+    document.getElementById('diffNormalBtn').addEventListener('click', () => { currentDifficulty = 'NORMAL'; updateDifficultyUI(); });
+    document.getElementById('diffHardBtn').addEventListener('click', () => { currentDifficulty = 'HARD'; updateDifficultyUI(); });
+    document.getElementById('setDiffEasy').addEventListener('click', () => { currentDifficulty = 'EASY'; updateDifficultyUI(); });
+    document.getElementById('setDiffNormal').addEventListener('click', () => { currentDifficulty = 'NORMAL'; updateDifficultyUI(); });
+    document.getElementById('setDiffHard').addEventListener('click', () => { currentDifficulty = 'HARD'; updateDifficultyUI(); });
+
+    // Leaderboard rendering
+    function renderLeaderboard() {
+      const emptyEl = document.getElementById('recordsEmpty');
+      const tableWrapperEl = document.getElementById('recordsTableWrapper');
+      const tbody = document.getElementById('recordsTableBody');
+
+      if (!records || records.length === 0) {
+        emptyEl.classList.remove('hidden');
+        tableWrapperEl.classList.add('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      tableWrapperEl.classList.remove('hidden');
+      tbody.innerHTML = '';
+
+      const gradeColors = {
+        S: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
+        A: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
+        B: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30',
+        C: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/30',
+        F: 'text-rose-500 bg-rose-500/10 border-rose-500/30',
+      };
+
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/50 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <span class="font-jua text-base px-2.5 py-0.5 rounded-lg border font-bold ${gradeColors[r.grade] || 'text-slate-300'}">
+              ${r.grade}
+            </span>
+          </td>
+          <td class="py-3 px-3">
+            <span class="${r.isClear ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}">
+              ${r.isClear ? '목적지 도착' : '운반 실패'}
+            </span>
+          </td>
+          <td class="py-3 px-3 font-jua text-base text-slate-200">${r.cargoLeft}개</td>
+          <td class="py-3 px-3 font-jua text-base text-amber-400">${r.nearMissCount}회</td>
+          <td class="py-3 px-3 font-jua text-base text-cyan-400">${r.timeRemaining}s</td>
+          <td class="py-3 px-3 text-xs text-slate-400">
+            ${r.difficulty === 'EASY' ? '쉬움' : r.difficulty === 'NORMAL' ? '보통' : '하드'}
+          </td>
+          <td class="py-3 px-3 text-xs text-slate-500">${r.date}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('clearRecordsBtn').addEventListener('click', () => {
+      records = [];
+      localStorage.removeItem('cargo_game_records');
+      renderLeaderboard();
+    });
+
+    // Resize Canvas
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      engine.truck.y = canvas.height - 135;
+      engine.truck.x = canvas.width / 2;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerScreenShake() {
+      gameTab.classList.remove('shake');
+      void gameTab.offsetWidth;
+      gameTab.classList.add('shake');
+      setTimeout(() => gameTab.classList.remove('shake'), 300);
+    }
+
+    function calculateGrade(cargo) {
+      if (cargo >= 9) return { grade: 'S', color: 'text-amber-400', title: '배달의 신! 완벽한 이사' };
+      if (cargo >= 7) return { grade: 'A', color: 'text-emerald-400', title: '베테랑 이사 전문가' };
+      if (cargo >= 4) return { grade: 'B', color: 'text-cyan-400', title: '안전 운전자' };
+      if (cargo >= 1) return { grade: 'C', color: 'text-indigo-400', title: '초보 배달원' };
+      return { grade: 'F', color: 'text-rose-500', title: '이삿짐 전멸 실패' };
+    }
+
+    // Game lifecycle functions
+    function startGame() {
+      sound.init();
+      const cfg = DIFFICULTY_CONFIG[currentDifficulty];
+
+      engine.gameState = 'PLAYING';
+      engine.gameTime = cfg.totalTime;
+      engine.totalTime = cfg.totalTime;
+      engine.distanceTraveled = 0;
+      engine.goalDistance = cfg.goalDistance;
+      engine.cargoCount = 10;
+      engine.initialCargo = 10;
+      engine.nearMissCount = 0;
+      engine.nearMissCombo = 0;
+      engine.lastNearMissTime = 0;
+      engine.turnChangeCounter = 0;
+      engine.lastCargoDropTime = Date.now();
+      engine.obstacles = [];
+      engine.items = [];
+      engine.particles = [];
+      engine.fallingCargos = [];
+      engine.tireTracks = [];
+      engine.truck.laneX = 0;
+      engine.truck.targetLaneX = 0;
+      engine.truck.tilt = 0;
+      engine.truck.isSpinning = false;
+      engine.truck.spinAngle = 0;
+      engine.truck.hasShield = false;
+
+      startOverlay.classList.add('hidden');
+      pauseOverlay.classList.add('hidden');
+      resultOverlay.classList.add('hidden');
+
+      updateHUD();
+    }
+
+    function pauseGame() {
+      if (engine.gameState === 'PLAYING') {
+        engine.gameState = 'PAUSED';
+        pauseOverlay.classList.remove('hidden');
+      } else if (engine.gameState === 'PAUSED') {
+        sound.init();
+        engine.gameState = 'PLAYING';
+        pauseOverlay.classList.add('hidden');
+      }
+    }
+
+    function endGame(isSuccess, message) {
+      engine.gameState = isSuccess ? 'CLEAR' : 'GAMEOVER';
+
+      if (isSuccess) {
+        sound.playGoal();
+        const evalGrade = calculateGrade(engine.cargoCount);
+        gradeBadgeEl.textContent = evalGrade.grade;
+        gradeBadgeEl.className = `font-jua text-7xl sm:text-8xl mb-1 drop-shadow-xl ${evalGrade.color}`;
+        resultEmojiEl.textContent = '🎉';
+        resultTitleEl.textContent = evalGrade.title;
+        resultTitleEl.className = `font-jua text-3xl sm:text-4xl mb-2 ${evalGrade.color}`;
+        resultDescEl.textContent = message || '무사히 이사할 집에 도착했습니다!';
+        finalCargoEl.textContent = `${engine.cargoCount}개`;
+        finalNearMissEl.textContent = `${engine.nearMissCount}회`;
+        finalTimeEl.textContent = `${Math.ceil(engine.gameTime)}s`;
+
+        saveRecord({
+          grade: evalGrade.grade,
+          cargoLeft: engine.cargoCount,
+          nearMissCount: engine.nearMissCount,
+          timeRemaining: Math.ceil(engine.gameTime),
+          difficulty: currentDifficulty,
+          isClear: true,
+        });
+      } else {
+        sound.playGameOver();
+        gradeBadgeEl.textContent = 'F';
+        gradeBadgeEl.className = 'font-jua text-7xl sm:text-8xl mb-1 drop-shadow-xl text-rose-500';
+        resultEmojiEl.textContent = '💥';
+        resultTitleEl.textContent = '운반 실패!';
+        resultTitleEl.className = 'font-jua text-3xl sm:text-4xl mb-2 text-rose-500';
+        resultDescEl.textContent = message || '이삿짐을 전부 분실했습니다.';
+        finalCargoEl.textContent = '0개';
+        finalNearMissEl.textContent = `${engine.nearMissCount}회`;
+        finalTimeEl.textContent = `${Math.ceil(engine.gameTime)}s`;
+
+        saveRecord({
+          grade: 'F',
+          cargoLeft: 0,
+          nearMissCount: engine.nearMissCount,
+          timeRemaining: Math.ceil(engine.gameTime),
+          difficulty: currentDifficulty,
+          isClear: false,
+        });
+      }
+
+      resultOverlay.classList.remove('hidden');
+      updateHUD();
+    }
+
+    function dropCargo(reason) {
+      if (engine.truck.hasShield) {
+        engine.truck.hasShield = false;
+        sound.playShieldAbsorb();
+        engine.particles.push({
+          x: engine.truck.x + engine.truck.laneX,
+          y: engine.truck.y - 45,
+          text: '🛡️ 보호막 방어!',
+          color: '#38bdf8',
+          vy: -2.2,
+          alpha: 1,
+          life: 50,
+        });
+        return;
+      }
+
+      if (engine.cargoCount <= 0 || engine.gameState !== 'PLAYING') return;
+
+      engine.cargoCount--;
+      sound.playDrop();
+
+      engine.fallingCargos.push({
+        x: engine.truck.x + engine.truck.laneX,
+        y: engine.truck.y - 25,
+        vx: (Math.random() - 0.5) * 12,
+        vy: -5 - Math.random() * 5,
+        rotation: 0,
+        vRot: (Math.random() - 0.5) * 0.45,
+        alpha: 1,
+      });
+
+      engine.particles.push({
+        x: engine.truck.x + engine.truck.laneX,
+        y: engine.truck.y - 45,
+        text: reason || '-1 이삿짐 낙하!',
+        color: '#ef4444',
+        vy: -2.4,
+        alpha: 1,
+        life: 45,
+      });
+
+      if (engine.cargoCount <= 0) {
+        endGame(false, '이삿짐을 전부 분실했습니다!');
+      }
+    }
+
+    function honkHorn() {
+      sound.init();
+      sound.playHorn();
+      engine.particles.push({
+        x: engine.truck.x + engine.truck.laneX,
+        y: engine.truck.y - 65,
+        text: '📢 빵! 빵!',
+        color: '#fbbf24',
+        vy: -3,
+        alpha: 1,
+        life: 40,
+      });
+      engine.obstacles.forEach((obs) => {
+        if ((obs.type === 'SEDAN' || obs.type === 'TRUCK') && obs.y > 0 && obs.y < engine.truck.y) {
+          obs.vy += 2.5;
+        }
+      });
+    }
+
+    // Event Handlers
+    startButton.addEventListener('click', startGame);
+    pauseBtn.addEventListener('click', pauseGame);
+    resumeButton.addEventListener('click', pauseGame);
+    restartFromPauseButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+    hornBtn.addEventListener('click', honkHorn);
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') engine.keys.Left = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') engine.keys.Right = true;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        engine.keys.Boost = true;
+      }
+      if (e.code === 'KeyH') honkHorn();
+      if (e.code === 'KeyP' || e.code === 'Escape') pauseGame();
+      if (engine.gameState === 'START' && (e.code === 'Space' || e.code === 'Enter')) startGame();
+      if ((engine.gameState === 'CLEAR' || engine.gameState === 'GAMEOVER') && e.code === 'KeyR') startGame();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') engine.keys.Left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') engine.keys.Right = false;
+      if (e.code === 'Space') engine.keys.Boost = false;
+    });
+
+    // Mobile / Touch controls
+    const touchLeftBtn = document.getElementById('touchLeftBtn');
+    const touchRightBtn = document.getElementById('touchRightBtn');
+    const touchBoostBtn = document.getElementById('touchBoostBtn');
+
+    function attachTouch(btn, prop) {
+      btn.addEventListener('mousedown', () => { engine.keys[prop] = true; });
+      btn.addEventListener('mouseup', () => { engine.keys[prop] = false; });
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); engine.keys[prop] = true; }, { passive: false });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); engine.keys[prop] = false; }, { passive: false });
+    }
+    attachTouch(touchLeftBtn, 'Left');
+    attachTouch(touchRightBtn, 'Right');
+    attachTouch(touchBoostBtn, 'Boost');
+
+    // Spawning pattern
+    function spawnEntities(canvasWidth) {
+      const cfg = DIFFICULTY_CONFIG[currentDifficulty];
+      const laneWidth = canvasWidth * 0.46;
+      const progressRatio = engine.distanceTraveled / engine.goalDistance;
+      const baseChance = (0.042 + progressRatio * 0.038) * cfg.spawnMultiplier;
+
+      if (Math.random() < baseChance) {
+        const types = ['SEDAN', 'TRUCK', 'BARREL', 'BARRICADE', 'PUDDLE', 'CONE'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const spawnX = (Math.random() - 0.5) * laneWidth;
+
+        const newObs = {
+          id: engine.entityIdCounter++,
+          x: spawnX,
+          y: -120,
+          type,
+          width: 44,
+          height: 44,
+          hit: false,
+          nearMissed: false,
+          vx: 0,
+          vy: 0,
+          animFrame: 0,
+          color: '#e11d48',
+        };
+
+        if (type === 'SEDAN') {
+          newObs.width = 46;
+          newObs.height = 80;
+          newObs.vy = Math.random() > 0.4 ? 2.6 : -1.8;
+          newObs.color = ['#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#eab308'][Math.floor(Math.random() * 5)];
+        } else if (type === 'TRUCK') {
+          newObs.width = 54;
+          newObs.height = 98;
+          newObs.vy = 1.1;
+          newObs.color = '#f59e0b';
+        } else if (type === 'BARREL') {
+          newObs.width = 38;
+          newObs.height = 38;
+          newObs.vx = (Math.random() - 0.5) * 4.2;
+        } else if (type === 'BARRICADE') {
+          newObs.width = 76;
+          newObs.height = 32;
+        } else if (type === 'PUDDLE') {
+          newObs.width = 62;
+          newObs.height = 40;
+        } else if (type === 'CONE') {
+          newObs.width = 32;
+          newObs.height = 32;
+        }
+
+        engine.obstacles.push(newObs);
+      }
+
+      if (Math.random() < 0.014) {
+        const itemType = Math.random() < cfg.shieldChance ? 'SHIELD' : 'BOX';
+        engine.items.push({
+          id: engine.entityIdCounter++,
+          x: (Math.random() - 0.5) * laneWidth,
+          y: -70,
+          type: itemType,
+          width: 36,
+          height: 36,
+          collected: false,
+          animFrame: 0,
+        });
+      }
+    }
+
+    function updateHUD() {
+      const speedKmh = Math.round(engine.truck.speed * 8);
+      speedTextEl.textContent = `${speedKmh} km/h`;
+      cargoCountEl.textContent = `${engine.cargoCount} / 10개`;
+      nearMissTextEl.textContent = `${engine.nearMissCount}회` + (engine.nearMissCombo > 1 ? ` x${engine.nearMissCombo}!` : '');
+      
+      if (engine.nearMissCombo > 1) {
+        nearMissFlameEl.className = 'w-4 h-4 text-rose-500 animate-pulse';
+      } else {
+        nearMissFlameEl.className = 'w-4 h-4 text-amber-400';
+      }
+
+      if (engine.truck.hasShield) {
+        shieldIndicatorEl.classList.remove('hidden');
+      } else {
+        shieldIndicatorEl.classList.add('hidden');
+      }
+
+      const timeLeft = Math.ceil(engine.gameTime);
+      timerTextEl.textContent = `${timeLeft}s`;
+      if (timeLeft <= 15) {
+        timerTextEl.className = 'font-jua text-base sm:text-lg leading-none text-rose-400 font-black';
+        timerIconEl.className = 'w-4 h-4 text-rose-400 animate-bounce';
+      } else {
+        timerTextEl.className = 'font-jua text-base sm:text-lg leading-none text-cyan-400';
+        timerIconEl.className = 'w-4 h-4 text-cyan-400';
+      }
+
+      const progressPercent = Math.min(100, (engine.distanceTraveled / engine.goalDistance) * 100);
+      progressBarEl.style.width = `${progressPercent}%`;
+    }
+
+    // Physics Update
+    function updatePhysics(delta) {
+      if (engine.gameState !== 'PLAYING') return;
+
+      engine.gameTime -= delta;
+      if (engine.gameTime <= 0) {
+        engine.gameTime = 0;
+        if (engine.distanceTraveled >= engine.goalDistance) {
+          endGame(true, '제한시간 내 목적지에 성공적으로 도착했습니다!');
+        } else {
+          endGame(false, '제한시간 초과! 목적지에 도달하지 못했습니다.');
+        }
+        return;
+      }
+
+      const isBoosting = engine.keys.Boost;
+      let currentSpeed = isBoosting ? engine.truck.boostSpeed : engine.truck.baseSpeed;
+      if (engine.truck.isSpinning) currentSpeed *= 0.28;
+
+      engine.truck.speed = currentSpeed;
+      engine.distanceTraveled += currentSpeed * 12.2;
+
+      if (engine.distanceTraveled >= engine.goalDistance) {
+        endGame(true, '축하합니다! 이사할 집에 모든 이삿짐을 배달했습니다!');
+        return;
+      }
+
+      if (Math.random() < 0.28) {
+        sound.playEngine(isBoosting);
+      }
+
+      const now = Date.now();
+      if (now - engine.lastNearMissTime > 2500 && engine.nearMissCombo > 0) {
+        engine.nearMissCombo = 0;
+      }
+
+      if (engine.truck.isSpinning) {
+        engine.truck.spinAngle += 0.38;
+        engine.truck.spinTimer--;
+        if (engine.truck.spinTimer <= 0) {
+          engine.truck.isSpinning = false;
+          engine.truck.spinAngle = 0;
+        }
+      }
+
+      const maxSteer = canvas.width * 0.22;
+      let moveDir = 0;
+      if (engine.keys.Left) moveDir -= 1;
+      if (engine.keys.Right) moveDir += 1;
+
+      if (engine.keys.Left !== engine.prevLeft || engine.keys.Right !== engine.prevRight) {
+        if (moveDir !== 0) engine.turnChangeCounter++;
+      }
+      engine.prevLeft = engine.keys.Left;
+      engine.prevRight = engine.keys.Right;
+
+      if (!engine.truck.isSpinning) {
+        engine.truck.targetLaneX += moveDir * 7.5;
+        engine.truck.targetLaneX = Math.max(-maxSteer, Math.min(maxSteer, engine.truck.targetLaneX));
+      }
+      engine.truck.laneX += (engine.truck.targetLaneX - engine.truck.laneX) * 0.26;
+      engine.truck.tilt = (engine.truck.targetLaneX - engine.truck.laneX) * 0.055;
+
+      if (Math.abs(engine.truck.targetLaneX - engine.truck.laneX) > 8 || isBoosting) {
+        engine.tireTracks.push({
+          x: engine.truck.x + engine.truck.laneX,
+          y: engine.truck.y + 32,
+          alpha: 0.6,
+        });
+
+        engine.particles.push({
+          x: engine.truck.x + engine.truck.laneX + (Math.random() - 0.5) * 32,
+          y: engine.truck.y + 44,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 2 + 1.2,
+          radius: Math.random() * 4.5 + 2,
+          color: isBoosting ? '#38bdf8' : '#64748b',
+          alpha: 0.85,
+          life: 20,
+        });
+      }
+
+      const timeSinceLastDrop = now - engine.lastCargoDropTime;
+      if (isBoosting && timeSinceLastDrop > 1800) {
+        engine.lastCargoDropTime = now;
+        dropCargo('부스터 과속 덜컹!');
+      }
+
+      if (engine.turnChangeCounter > 4 && timeSinceLastDrop > 1200) {
+        engine.turnChangeCounter = 0;
+        engine.lastCargoDropTime = now;
+        dropCargo('급회전 차체 흔들림!');
+      }
+
+      engine.roadOffset = (engine.roadOffset + currentSpeed * 2.3) % 40;
+      engine.sideSceneryOffset = (engine.sideSceneryOffset + currentSpeed * 1.6) % 120;
+      spawnEntities(canvas.width);
+
+      const truckBounds = {
+        left: engine.truck.x + engine.truck.laneX - engine.truck.width / 2 + 6,
+        right: engine.truck.x + engine.truck.laneX + engine.truck.width / 2 - 6,
+        top: engine.truck.y - engine.truck.height / 2 + 8,
+        bottom: engine.truck.y + engine.truck.height / 2 - 8,
+      };
+
+      // Item Pickup
+      for (let i = engine.items.length - 1; i >= 0; i--) {
+        const item = engine.items[i];
+        item.y += currentSpeed * 1.5;
+        item.animFrame += 0.1;
+
+        const itemBounds = {
+          left: engine.truck.x + item.x - item.width / 2,
+          right: engine.truck.x + item.x + item.width / 2,
+          top: item.y - item.height / 2,
+          bottom: item.y + item.height / 2,
+        };
+
+        if (
+          !item.collected &&
+          truckBounds.left < itemBounds.right &&
+          truckBounds.right > itemBounds.left &&
+          truckBounds.top < itemBounds.bottom &&
+          truckBounds.bottom > itemBounds.top
+        ) {
+          item.collected = true;
+
+          if (item.type === 'BOX') {
+            sound.playItemPickup(false);
+            if (engine.cargoCount < engine.initialCargo) {
+              engine.cargoCount++;
+              engine.particles.push({
+                x: engine.truck.x + engine.truck.laneX,
+                y: engine.truck.y - 45,
+                text: '+1 이삿짐 복구! 📦',
+                color: '#10b981',
+                vy: -2.2,
+                alpha: 1,
+                life: 45,
+              });
+            } else {
+              engine.particles.push({
+                x: engine.truck.x + engine.truck.laneX,
+                y: engine.truck.y - 45,
+                text: '최대 이삿짐 유지 중!',
+                color: '#f59e0b',
+                vy: -2.2,
+                alpha: 1,
+                life: 40,
+              });
+            }
+          } else if (item.type === 'SHIELD') {
+            sound.playItemPickup(true);
+            engine.truck.hasShield = true;
+            engine.particles.push({
+              x: engine.truck.x + engine.truck.laneX,
+              y: engine.truck.y - 45,
+              text: '🛡️ 에너지 쉴드 장착!',
+              color: '#38bdf8',
+              vy: -2.4,
+              alpha: 1,
+              life: 45,
+            });
+          }
+          engine.items.splice(i, 1);
+          continue;
+        }
+
+        if (item.y > canvas.height + 70) {
+          engine.items.splice(i, 1);
+        }
+      }
+
+      // Obstacle Collision & Near Miss
+      for (let i = engine.obstacles.length - 1; i >= 0; i--) {
+        const obs = engine.obstacles[i];
+        obs.y += currentSpeed * 1.5 + obs.vy;
+        obs.x += obs.vx;
+        obs.animFrame += 0.1;
+
+        if (obs.type === 'BARREL') {
+          if (Math.abs(obs.x) > maxSteer) obs.vx *= -1;
+        }
+
+        const obsBounds = {
+          left: engine.truck.x + obs.x - obs.width / 2,
+          right: engine.truck.x + obs.x + obs.width / 2,
+          top: obs.y - obs.height / 2,
+          bottom: obs.y + obs.height / 2,
+        };
+
+        if (
+          !obs.hit &&
+          truckBounds.left < obsBounds.right &&
+          truckBounds.right > obsBounds.left &&
+          truckBounds.top < obsBounds.bottom &&
+          truckBounds.bottom > obsBounds.top
+        ) {
+          obs.hit = true;
+          triggerScreenShake();
+
+          if (obs.type === 'PUDDLE') {
+            sound.playScreech();
+            engine.truck.isSpinning = true;
+            engine.truck.spinTimer = 32;
+            dropCargo('오일 미끄럼 스핀!');
+          } else {
+            sound.playHit();
+            dropCargo('장애물 정면 충돌!');
+          }
+
+          for (let p = 0; p < 16; p++) {
+            engine.particles.push({
+              x: engine.truck.x + obs.x,
+              y: obs.y,
+              vx: (Math.random() - 0.5) * 8.5,
+              vy: (Math.random() - 0.5) * 8.5,
+              color: obs.type === 'PUDDLE' ? '#38bdf8' : '#f59e0b',
+              radius: Math.random() * 5 + 2,
+              alpha: 1,
+              life: 25,
+            });
+          }
+        }
+
+        // Near Miss Detection
+        if (!obs.hit && !obs.nearMissed && obs.y > engine.truck.y - 12 && obs.y < engine.truck.y + 38) {
+          const distX = Math.abs(engine.truck.x + engine.truck.laneX - (engine.truck.x + obs.x));
+          if (distX < engine.truck.width / 2 + obs.width / 2 + 20) {
+            obs.nearMissed = true;
+            engine.nearMissCount++;
+            engine.nearMissCombo++;
+            engine.lastNearMissTime = now;
+            sound.playNearMiss(engine.nearMissCombo);
+
+            const comboText = engine.nearMissCombo > 1 ? `⚡ NEAR MISS x${engine.nearMissCombo} COMBO!` : '⚡ NEAR MISS!';
+            engine.particles.push({
+              x: engine.truck.x + engine.truck.laneX,
+              y: engine.truck.y - 50,
+              text: comboText,
+              color: engine.nearMissCombo > 2 ? '#f43f5e' : '#f59e0b',
+              vy: -2.6,
+              alpha: 1,
+              life: 42,
+            });
+          }
+        }
+
+        if (obs.y > canvas.height + 110) {
+          engine.obstacles.splice(i, 1);
+        }
+      }
+
+      // Tire tracks fading
+      for (let i = engine.tireTracks.length - 1; i >= 0; i--) {
+        engine.tireTracks[i].y += currentSpeed * 1.5;
+        engine.tireTracks[i].alpha -= 0.022;
+        if (engine.tireTracks[i].alpha <= 0 || engine.tireTracks[i].y > canvas.height) {
+          engine.tireTracks.splice(i, 1);
+        }
+      }
+
+      // Particles
+      for (let i = engine.particles.length - 1; i >= 0; i--) {
+        const p = engine.particles[i];
+        if (p.text) {
+          p.y += p.vy || -2;
+          p.alpha -= 0.022;
+        } else {
+          p.x += p.vx || 0;
+          p.y += p.vy || 0;
+          p.alpha -= 1 / p.life;
+        }
+        if (p.alpha <= 0) engine.particles.splice(i, 1);
+      }
+
+      // Falling Cargos
+      for (let i = engine.fallingCargos.length - 1; i >= 0; i--) {
+        const fc = engine.fallingCargos[i];
+        fc.x += fc.vx;
+        fc.y += fc.vy;
+        fc.vy += 0.46;
+        fc.rotation += fc.vRot;
+        fc.alpha -= 0.016;
+        if (fc.alpha <= 0) engine.fallingCargos.splice(i, 1);
+      }
+
+      updateHUD();
+    }
+
+    // Canvas Render Loop
+    function renderCanvas() {
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const centerX = width / 2;
+      const roadWidth = width * 0.52;
+      const leftMargin = centerX - roadWidth / 2;
+      const rightMargin = centerX + roadWidth / 2;
+
+      // 1. Scenery
+      ctx.fillStyle = '#0c2217';
+      ctx.fillRect(0, 0, leftMargin - 6, height);
+      ctx.fillRect(rightMargin + 6, 0, width - rightMargin, height);
+
+      const spacing = 120;
+      for (let y = -spacing; y < height + spacing; y += spacing) {
+        const sy = y + engine.sideSceneryOffset;
+
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.arc(leftMargin - 38, sy, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#047857';
+        ctx.beginPath();
+        ctx.arc(leftMargin - 28, sy + 10, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (Math.floor(y / spacing) % 2 === 0) {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(rightMargin + 24, sy - 14, 32, 32);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillRect(rightMargin + 30, sy - 6, 8, 8);
+        } else {
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath();
+          ctx.arc(rightMargin + 42, sy, 24, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 2. Asphalt Road
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(leftMargin, 0, roadWidth, height);
+
+      // 3. Tire Tracks
+      engine.tireTracks.forEach((t) => {
+        ctx.fillStyle = `rgba(15, 23, 42, ${t.alpha})`;
+        ctx.fillRect(t.x - 18, t.y, 8, 14);
+        ctx.fillRect(t.x + 10, t.y, 8, 14);
+      });
+
+      // 4. Curbs
+      const stripeHeight = 32;
+      for (let y = -stripeHeight; y < height + stripeHeight; y += stripeHeight) {
+        const currY = y + engine.roadOffset;
+        const isRed = Math.floor((y + engine.roadOffset) / stripeHeight) % 2 === 0;
+        ctx.fillStyle = isRed ? '#ef4444' : '#f8fafc';
+        ctx.fillRect(leftMargin - 8, currY, 8, stripeHeight);
+        ctx.fillRect(rightMargin, currY, 8, stripeHeight);
+      }
+
+      // Dashed lane dividers
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -engine.roadOffset;
+      ctx.beginPath();
+      ctx.moveTo(centerX - roadWidth / 6, 0);
+      ctx.lineTo(centerX - roadWidth / 6, height);
+      ctx.moveTo(centerX + roadWidth / 6, 0);
+      ctx.lineTo(centerX + roadWidth / 6, height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 5. Goal Line Checkered Flag
+      const remainingDist = engine.goalDistance - engine.distanceTraveled;
+      if (remainingDist < 1400) {
+        const goalY = engine.truck.y - remainingDist / 2.6;
+        const checkSize = 16;
+        for (let gx = leftMargin; gx < rightMargin; gx += checkSize) {
+          for (let gy = 0; gy < 32; gy += checkSize) {
+            const isBlack = (Math.floor(gx / checkSize) + Math.floor(gy / checkSize)) % 2 === 0;
+            ctx.fillStyle = isBlack ? '#0f172a' : '#f8fafc';
+            ctx.fillRect(gx, goalY + gy, checkSize, checkSize);
+          }
+        }
+      }
+
+      // 6. Items
+      engine.items.forEach((item) => {
+        const ix = centerX + item.x;
+        const iy = item.y;
+        const floatY = Math.sin(item.animFrame * 2) * 5;
+
+        ctx.save();
+        ctx.translate(ix, iy + floatY);
+
+        if (item.type === 'BOX') {
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(-17, -17, 34, 34);
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-17, -17, 34, 34);
+          ctx.font = '18px "Jua", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('📦', 0, 7);
+        } else if (item.type === 'SHIELD') {
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 19, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.font = '18px "Jua", cursive';
+          ctx.textAlign = 'center';
+          ctx.fillText('🛡️', 0, 7);
+        }
+        ctx.restore();
+      });
+
+      // 7. Obstacles
+      engine.obstacles.forEach((obs) => {
+        const ox = centerX + obs.x;
+        const oy = obs.y;
+
+        if (oy < 30 && (obs.type === 'SEDAN' || obs.type === 'TRUCK' || obs.type === 'BARREL')) {
+          ctx.fillStyle = '#ef4444';
+          ctx.font = '700 15px "Jua", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🚨 주의!', ox, 35);
+        }
+
+        ctx.save();
+        ctx.translate(ox, oy);
+
+        if (obs.type === 'SEDAN' || obs.type === 'TRUCK') {
+          ctx.fillStyle = 'rgba(0,0,0,0.35)';
+          ctx.fillRect(-obs.width / 2 + 4, -obs.height / 2 + 6, obs.width, obs.height);
+
+          ctx.fillStyle = obs.color;
+          ctx.fillRect(-obs.width / 2, -obs.height / 2, obs.width, obs.height);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(-obs.width / 2 + 5, -obs.height / 2 + 12, obs.width - 10, 16);
+
+          ctx.fillStyle = obs.vy < 0 ? '#fef08a' : '#ef4444';
+          ctx.fillRect(-obs.width / 2 + 3, obs.height / 2 - 5, 8, 4);
+          ctx.fillRect(obs.width / 2 - 11, obs.height / 2 - 5, 8, 4);
+        } else if (obs.type === 'BARREL') {
+          ctx.rotate(obs.animFrame);
+          ctx.fillStyle = '#b45309';
+          ctx.fillRect(-19, -19, 38, 38);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(-15, -15, 30, 30);
+        } else if (obs.type === 'BARRICADE') {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-obs.width / 2, -10, 8, 20);
+          ctx.fillRect(obs.width / 2 - 8, -10, 8, 20);
+
+          const isOrange = Math.floor(obs.animFrame * 5) % 2 === 0;
+          ctx.fillStyle = isOrange ? '#f97316' : '#f8fafc';
+          ctx.fillRect(-obs.width / 2 + 4, -12, obs.width - 8, 14);
+
+          ctx.fillStyle = Math.floor(obs.animFrame * 10) % 2 === 0 ? '#fbbf24' : '#78350f';
+          ctx.beginPath();
+          ctx.arc(0, -16, 6, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (obs.type === 'PUDDLE') {
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, obs.width / 2, obs.height / 2, Math.sin(obs.animFrame) * 0.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.ellipse(-5, -2, obs.width / 4, obs.height / 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (obs.type === 'CONE') {
+          const bounceY = Math.abs(Math.sin(obs.animFrame * 3)) * 4;
+          ctx.translate(0, -bounceY);
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.moveTo(0, -16);
+          ctx.lineTo(-14, 14);
+          ctx.lineTo(14, 14);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-8, -2, 16, 5);
+        }
+        ctx.restore();
+      });
+
+      // 8. Player Truck
+      ctx.save();
+      ctx.translate(engine.truck.x + engine.truck.laneX, engine.truck.y);
+      ctx.rotate(engine.truck.tilt + engine.truck.spinAngle);
+
+      // Headlight Beams
+      ctx.fillStyle = 'rgba(254, 240, 138, 0.12)';
+      ctx.beginPath();
+      ctx.moveTo(-engine.truck.width / 2 + 8, -engine.truck.height / 2);
+      ctx.lineTo(-engine.truck.width / 2 - 40, -engine.truck.height / 2 - 130);
+      ctx.lineTo(engine.truck.width / 2 + 40, -engine.truck.height / 2 - 130);
+      ctx.lineTo(engine.truck.width / 2 - 8, -engine.truck.height / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Shield Aura
+      if (engine.truck.hasShield) {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, engine.truck.height / 2 + 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.beginPath();
+        ctx.arc(0, 0, engine.truck.height / 2 + 10, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(-engine.truck.width / 2 + 4, -engine.truck.height / 2 + 10, engine.truck.width, engine.truck.height);
+
+      const colorSet = TRUCK_COLOR_MAP[currentTruckColor] || TRUCK_COLOR_MAP.blue;
+
+      // Cabin
+      ctx.fillStyle = colorSet.body;
+      ctx.fillRect(-engine.truck.width / 2, -engine.truck.height / 2, engine.truck.width, engine.truck.height - 24);
+
+      // Bed
+      ctx.fillStyle = colorSet.hex;
+      ctx.fillRect(-engine.truck.width / 2 + 3, engine.truck.height / 2 - 30, engine.truck.width - 6, 26);
+
+      // Windshield
+      ctx.fillStyle = colorSet.light;
+      ctx.fillRect(-engine.truck.width / 2 + 8, -engine.truck.height / 2 + 10, engine.truck.width - 16, 14);
+
+      // Headlights
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(-engine.truck.width / 2 + 4, -engine.truck.height / 2, 8, 4);
+      ctx.fillRect(engine.truck.width / 2 - 12, -engine.truck.height / 2, 8, 4);
+
+      // Taillights
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-engine.truck.width / 2 + 4, engine.truck.height / 2 - 4, 10, 4);
+      ctx.fillRect(engine.truck.width / 2 - 14, engine.truck.height / 2 - 4, 10, 4);
+
+      // Stacked Cargo Boxes
+      const boxWidth = 26;
+      const boxHeight = 16;
+      for (let i = 0; i < engine.cargoCount; i++) {
+        const row = Math.floor(i / 2);
+        const col = i % 2;
+        const bx = col === 0 ? -boxWidth + 2 : 2;
+        const by = -engine.truck.height / 2 + 28 + row * (boxHeight - 2);
+
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(bx, by, boxWidth - 4, boxHeight - 4);
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, by, boxWidth - 4, boxHeight - 4);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(bx + (boxWidth - 4) / 2 - 2, by, 4, boxHeight - 4);
+      }
+      ctx.restore();
+
+      // 9. Falling Cargos
+      engine.fallingCargos.forEach((fc) => {
+        ctx.save();
+        ctx.translate(fc.x, fc.y);
+        ctx.rotate(fc.rotation);
+        ctx.globalAlpha = fc.alpha;
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(-13, -9, 26, 18);
+        ctx.strokeStyle = '#451a03';
+        ctx.strokeRect(-13, -9, 26, 18);
+        ctx.restore();
+      });
+
+      // 10. Particle Texts & Dust
+      engine.particles.forEach((p) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        if (p.text) {
+          ctx.font = '900 17px "Jua", sans-serif';
+          ctx.fillStyle = p.color;
+          ctx.textAlign = 'center';
+          ctx.fillText(p.text, p.x, p.y);
+        } else {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius || 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    // Main animation loop
+    let lastTime = performance.now();
+    function gameLoop(now) {
+      const delta = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+
+      updatePhysics(delta);
+      renderCanvas();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('load', () => {
+      lucide.createIcons();
+      updateDifficultyUI();
+      renderLeaderboard();
+      requestAnimationFrame(gameLoop);
+    });
+  </script>
+</body>
+</html>

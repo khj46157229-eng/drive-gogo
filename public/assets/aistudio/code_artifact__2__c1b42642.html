@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이삿짐 운반 대작전</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        /* Screen Shake Animation */
+        @keyframes shake {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-8px, 6px); }
+            40% { transform: translate(8px, -6px); }
+            60% { transform: translate(-5px, 3px); }
+            80% { transform: translate(5px, -3px); }
+            100% { transform: translate(0, 0); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        /* Retro Arcade Text Glow */
+        .arcade-glow {
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.7), 0 0 16px rgba(245, 158, 11, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 overflow-x-hidden">
+
+    <!-- Container for Canvas & UI -->
+    <div id="gameWrapper" class="relative w-full max-w-4xl bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-700 flex flex-col items-center">
+        
+        <!-- Top HUD Header -->
+        <div class="w-full bg-slate-900/95 border-b-2 border-slate-800 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-2 z-10">
+            <!-- Title -->
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl sm:text-3xl animate-bounce">🚚</span>
+                <h1 class="font-jua text-xl sm:text-2xl text-amber-400 arcade-glow tracking-wide">이삿짐 운반 대작전</h1>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <!-- Speedometer -->
+                <div class="flex items-center space-x-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <span class="text-lg">⚡</span>
+                    <div>
+                        <div class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">속도</div>
+                        <div id="speedText" class="font-jua text-base sm:text-xl text-yellow-400 leading-none">60 km/h</div>
+                    </div>
+                </div>
+
+                <!-- Cargo Counter -->
+                <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <span class="text-lg sm:text-xl">📦</span>
+                    <div>
+                        <div class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">남은 이삿짐</div>
+                        <div id="cargoCount" class="font-jua text-base sm:text-xl text-emerald-400 leading-none">10개</div>
+                    </div>
+                </div>
+
+                <!-- Shield Indicator -->
+                <div id="shieldIndicator" class="hidden flex items-center space-x-1.5 bg-cyan-950/80 px-2.5 py-1.5 rounded-xl border border-cyan-500/50">
+                    <span class="text-lg animate-pulse">🛡️</span>
+                    <span class="text-xs font-bold text-cyan-300">보호막</span>
+                </div>
+
+                <!-- Timer -->
+                <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                    <span class="text-lg sm:text-xl">⏱️</span>
+                    <div>
+                        <div class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">시간</div>
+                        <div id="timerText" class="font-jua text-base sm:text-xl text-cyan-400 leading-none">60s</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar Track -->
+        <div class="w-full bg-slate-950 px-4 py-2 border-b border-slate-800 flex items-center space-x-3 z-10">
+            <span class="text-xs text-slate-400 font-bold uppercase shrink-0">출발</span>
+            <div class="relative flex-1 bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+                <div id="progressBar" class="bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 h-full w-0 transition-all duration-75"></div>
+            </div>
+            <span class="text-xs text-amber-400 font-bold uppercase shrink-0">🏡 목적지</span>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full flex justify-center items-center bg-slate-950 overflow-hidden" style="min-height: 500px; max-height: 580px;">
+            <canvas id="gameCanvas" class="w-full h-full block cursor-none"></canvas>
+
+            <!-- Overlay Screen: Ready / Start -->
+            <div id="startOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 transition-opacity duration-300">
+                <div class="text-6xl mb-3 animate-bounce">🚚📦</div>
+                <h2 class="font-jua text-3xl sm:text-5xl text-amber-400 arcade-glow mb-2">이삿짐 운반 대작전!</h2>
+                <p class="text-slate-300 text-sm sm:text-base max-w-md mb-6 leading-relaxed">
+                    60초 안에 목적지까지 안전하게 운반하세요!<br>
+                    <span class="text-cyan-300 font-bold">📦 상자 아이템</span>으로 이삿짐을 복구하고, <span class="text-amber-300 font-bold">🛡️ 보호막</span>을 획득하세요!<br>
+                    <span class="text-rose-400">장애물 충돌, 급회전, 부스터 과속</span> 시 상자가 떨어집니다.
+                </p>
+
+                <div class="grid grid-cols-2 gap-3 max-w-xs w-full mb-6 text-xs text-slate-300">
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700 flex flex-col items-center">
+                        <span class="font-bold text-amber-400 mb-1">← / → (A / D)</span>
+                        <span>차선 이동 / 급회전</span>
+                    </div>
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700 flex flex-col items-center">
+                        <span class="font-bold text-cyan-400 mb-1">Spacebar</span>
+                        <span>부스터 (초과속)</span>
+                    </div>
+                </div>
+
+                <button id="startButton" class="font-jua text-2xl px-10 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-2xl shadow-xl transform transition active:scale-95 border-2 border-amber-300">
+                    운전 시작하기 (Space / Enter)
+                </button>
+            </div>
+
+            <!-- Overlay Screen: Game Over / Clear -->
+            <div id="resultOverlay" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+                <div id="gradeBadge" class="font-jua text-7xl mb-1 drop-shadow-lg">S</div>
+                <div id="resultEmoji" class="text-5xl mb-2">🎉</div>
+                <h2 id="resultTitle" class="font-jua text-4xl text-amber-400 mb-2">완주 성공!</h2>
+                <p id="resultDesc" class="text-slate-300 text-sm sm:text-base mb-5">안전하게 목적지에 도착했습니다.</p>
+                
+                <div class="grid grid-cols-2 gap-3 max-w-xs w-full mb-6">
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">남은 이삿짐</div>
+                        <div id="finalCargo" class="font-jua text-3xl text-emerald-400">8개</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold mb-0.5">아슬아슬 피하기</div>
+                        <div id="finalNearMiss" class="font-jua text-3xl text-amber-400">5회</div>
+                    </div>
+                </div>
+
+                <button id="restartButton" class="font-jua text-xl px-8 py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 border-2 border-amber-500/50 font-bold rounded-xl shadow-lg transform transition active:scale-95">
+                    다시 도전하기 (R)
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer Guide -->
+        <div class="w-full bg-slate-950 border-t border-slate-800 p-2 text-center text-xs text-slate-400 flex justify-around">
+            <span>🕹️ 조작: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">→</kbd> 차선 이동</span>
+            <span>⚡ 부스터: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">Space</kbd></span>
+            <span>🔄 재시작: <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-200">R</kbd></span>
+        </div>
+    </div>
+
+    <!-- Web Audio API Sound Generator -->
+    <script>
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playEngine(boost) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(boost ? 170 : 90, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch(e){}
+            }
+            playDrop() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.22);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.22);
+                } catch(e){}
+            }
+            playHit() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.25);
+                } catch(e){}
+            }
+            playItemPickup() {
+                if (!this.ctx) return;
+                try {
+                    const notes = [440, 554.37, 659.25, 880];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.12, this.ctx.currentTime + idx * 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.05 + 0.15);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + idx * 0.05);
+                        osc.stop(this.ctx.currentTime + idx * 0.05 + 0.15);
+                    });
+                } catch(e){}
+            }
+            playNearMiss() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.15);
+                } catch(e){}
+            }
+            playScreech() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(650, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(350, this.ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.25);
+                } catch(e){}
+            }
+            playHorn() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.3);
+                } catch(e){}
+            }
+            playGoal() {
+                if (!this.ctx) return;
+                try {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.15, this.ctx.currentTime + idx * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + idx * 0.1);
+                        osc.stop(this.ctx.currentTime + idx * 0.1 + 0.3);
+                    });
+                } catch(e){}
+            }
+        }
+        const sfx = new SoundEffects();
+    </script>
+
+    <!-- Game Engine Implementation -->
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameWrapper = document.getElementById('gameWrapper');
+
+        // UI Element References
+        const speedTextEl = document.getElementById('speedText');
+        const cargoCountEl = document.getElementById('cargoCount');
+        const timerTextEl = document.getElementById('timerText');
+        const shieldIndicatorEl = document.getElementById('shieldIndicator');
+        const progressBarEl = document.getElementById('progressBar');
+        const startOverlay = document.getElementById('startOverlay');
+        const resultOverlay = document.getElementById('resultOverlay');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const gradeBadgeEl = document.getElementById('gradeBadge');
+        const resultEmoji = document.getElementById('resultEmoji');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDesc = document.getElementById('resultDesc');
+        const finalCargoEl = document.getElementById('finalCargo');
+        const finalNearMissEl = document.getElementById('finalNearMiss');
+
+        // Game Configuration & State Variables
+        const TOTAL_TIME = 60;
+        const GOAL_DISTANCE = 56000;
+        const INITIAL_CARGO = 10;
+        
+        let gameState = 'START';
+        let gameTime = TOTAL_TIME;
+        let distanceTraveled = 0;
+        let cargoCount = INITIAL_CARGO;
+        let nearMissCount = 0;
+
+        const keys = { Left: false, Right: false, Boost: false };
+        let prevLeft = false;
+        let prevRight = false;
+        let turnChangeCounter = 0;
+
+        const truck = {
+            x: 0,
+            y: 0,
+            width: 64,
+            height: 110,
+            speed: 0,
+            baseSpeed: 7.5,
+            boostSpeed: 15,
+            laneX: 0,
+            targetLaneX: 0,
+            tilt: 0,
+            spinAngle: 0,
+            isSpinning: false,
+            spinTimer: 0,
+            hasShield: false
+        };
+
+        let roadOffset = 0;
+        let sideSceneryOffset = 0;
+        let obstacles = [];
+        let items = [];
+        let particles = [];
+        let fallingCargos = [];
+        let tireTracks = [];
+        let lastCargoDropTime = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            truck.y = canvas.height - 140;
+            truck.x = canvas.width / 2;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerScreenShake() {
+            gameWrapper.classList.remove('shake');
+            void gameWrapper.offsetWidth;
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 300);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = true;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = true;
+            if (e.code === 'Space') keys.Boost = true;
+
+            if (gameState === 'START' && (e.code === 'Space' || e.code === 'Enter')) {
+                startGame();
+            }
+            if ((gameState === 'CLEAR' || gameState === 'GAMEOVER') && e.code === 'KeyR') {
+                startGame();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.Left = false;
+            if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.Right = false;
+            if (e.code === 'Space') keys.Boost = false;
+        });
+
+        startButton.addEventListener('click', () => { sfx.init(); startGame(); });
+        restartButton.addEventListener('click', () => { sfx.init(); startGame(); });
+
+        function startGame() {
+            gameState = 'PLAYING';
+            gameTime = TOTAL_TIME;
+            distanceTraveled = 0;
+            cargoCount = INITIAL_CARGO;
+            nearMissCount = 0;
+            obstacles = [];
+            items = [];
+            particles = [];
+            fallingCargos = [];
+            tireTracks = [];
+            truck.laneX = 0;
+            truck.targetLaneX = 0;
+            truck.isSpinning = false;
+            truck.spinAngle = 0;
+            truck.hasShield = false;
+            lastCargoDropTime = Date.now();
+
+            updateUI();
+            startOverlay.classList.add('hidden');
+            resultOverlay.classList.add('hidden');
+        }
+
+        function dropCargo(reason) {
+            if (truck.hasShield) {
+                truck.hasShield = false;
+                sfx.playHit();
+                particles.push({
+                    x: truck.x + truck.laneX,
+                    y: truck.y - 40,
+                    text: "🛡️ 보호막 방어!",
+                    color: "#38bdf8",
+                    vy: -2,
+                    alpha: 1,
+                    life: 50
+                });
+                return;
+            }
+
+            if (cargoCount <= 0 || gameState !== 'PLAYING') return;
+
+            cargoCount--;
+            updateUI();
+            sfx.playDrop();
+
+            fallingCargos.push({
+                x: truck.x + truck.laneX,
+                y: truck.y - 20,
+                vx: (Math.random() - 0.5) * 10,
+                vy: -5 - Math.random() * 5,
+                rotation: 0,
+                vRot: (Math.random() - 0.5) * 0.4,
+                alpha: 1
+            });
+
+            particles.push({
+                x: truck.x + truck.laneX,
+                y: truck.y - 40,
+                text: reason || "-1 이삿짐!",
+                color: "#ef4444",
+                vy: -2,
+                alpha: 1,
+                life: 45
+            });
+
+            if (cargoCount <= 0) {
+                endGame(false, "이삿짐을 모두 떨어뜨렸습니다!");
+            }
+        }
+
+        function spawnEntitiesPattern() {
+            const laneWidth = canvas.width * 0.45;
+            const progressRatio = distanceTraveled / GOAL_DISTANCE;
+            const baseChance = 0.045 + (progressRatio * 0.035);
+            
+            if (Math.random() < baseChance) {
+                const types = ['SEDAN', 'TRUCK', 'BARREL', 'BARRICADE', 'PUDDLE', 'CONE'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                const spawnX = (Math.random() - 0.5) * laneWidth;
+                let newObs = {
+                    x: spawnX,
+                    y: -120,
+                    type: type,
+                    width: 44,
+                    height: 44,
+                    hit: false,
+                    nearMissed: false,
+                    vx: 0,
+                    vy: 0,
+                    animFrame: 0,
+                    color: '#e11d48'
+                };
+
+                if (type === 'SEDAN') {
+                    newObs.width = 46;
+                    newObs.height = 80;
+                    newObs.vy = (Math.random() > 0.4) ? 2.5 : -1.5;
+                    newObs.color = ['#ef4444', '#3b82f6', '#10b981', '#8b5cf6'][Math.floor(Math.random() * 4)];
+                    if (Math.random() < 0.2) sfx.playHorn();
+                } else if (type === 'TRUCK') {
+                    newObs.width = 54;
+                    newObs.height = 100;
+                    newObs.vy = 1.0;
+                    newObs.color = '#f59e0b';
+                } else if (type === 'BARREL') {
+                    newObs.width = 38;
+                    newObs.height = 38;
+                    newObs.vx = (Math.random() - 0.5) * 4;
+                } else if (type === 'BARRICADE') {
+                    newObs.width = 75;
+                    newObs.height = 30;
+                } else if (type === 'PUDDLE') {
+                    newObs.width = 60;
+                    newObs.height = 40;
+                } else if (type === 'CONE') {
+                    newObs.width = 32;
+                    newObs.height = 32;
+                }
+
+                obstacles.push(newObs);
+            }
+
+            if (Math.random() < 0.012) {
+                const itemType = Math.random() < 0.65 ? 'BOX' : 'SHIELD';
+                items.push({
+                    x: (Math.random() - 0.5) * laneWidth,
+                    y: -60,
+                    type: itemType,
+                    width: 36,
+                    height: 36,
+                    collected: false,
+                    animFrame: 0
+                });
+            }
+        }
+
+        function calculateGrade() {
+            if (cargoCount >= 9) return { grade: 'S', color: 'text-amber-400' };
+            if (cargoCount >= 7) return { grade: 'A', color: 'text-emerald-400' };
+            if (cargoCount >= 4) return { grade: 'B', color: 'text-cyan-400' };
+            if (cargoCount >= 1) return { grade: 'C', color: 'text-indigo-400' };
+            return { grade: 'F', color: 'text-rose-500' };
+        }
+
+        function endGame(success, message) {
+            gameState = success ? 'CLEAR' : 'GAMEOVER';
+            
+            if (success) {
+                sfx.playGoal();
+                const evalGrade = calculateGrade();
+                gradeBadgeEl.textContent = evalGrade.grade;
+                gradeBadgeEl.className = `font-jua text-7xl mb-1 drop-shadow-lg ${evalGrade.color}`;
+
+                resultEmoji.textContent = '🎉';
+                resultTitle.textContent = '목적지 도착 성공!';
+                resultTitle.className = 'font-jua text-4xl text-amber-400 mb-2';
+                resultDesc.textContent = message || '무사히 이사할 집에 도착했습니다!';
+                finalCargoEl.textContent = `${cargoCount}개`;
+                finalNearMissEl.textContent = `${nearMissCount}회`;
+            } else {
+                sfx.playHit();
+                gradeBadgeEl.textContent = 'F';
+                gradeBadgeEl.className = 'font-jua text-7xl mb-1 drop-shadow-lg text-rose-500';
+
+                resultEmoji.textContent = '💥';
+                resultTitle.textContent = '운반 실패!';
+                resultTitle.className = 'font-jua text-4xl text-rose-500 mb-2';
+                resultDesc.textContent = message || '이삿짐 손실로 운반에 실패했습니다.';
+                finalCargoEl.textContent = '0개';
+                finalNearMissEl.textContent = `${nearMissCount}회`;
+            }
+
+            resultOverlay.classList.remove('hidden');
+        }
+
+        function update(delta) {
+            if (gameState !== 'PLAYING') return;
+
+            gameTime -= delta;
+            if (gameTime <= 0) {
+                gameTime = 0;
+                if (distanceTraveled >= GOAL_DISTANCE) {
+                    endGame(true, "제한시간 내 목적지 도착!");
+                } else {
+                    endGame(false, "제한시간 60초가 초과되었습니다.");
+                }
+                return;
+            }
+
+            const isBoosting = keys.Boost;
+            let currentSpeed = isBoosting ? truck.boostSpeed : truck.baseSpeed;
+            if (truck.isSpinning) currentSpeed *= 0.3;
+
+            truck.speed = currentSpeed;
+            distanceTraveled += currentSpeed * 12;
+
+            if (distanceTraveled >= GOAL_DISTANCE) {
+                endGame(true, "축하합니다! 이사할 집에 무사히 도착했습니다.");
+                return;
+            }
+
+            if (Math.random() < 0.25) sfx.playEngine(isBoosting);
+
+            if (truck.isSpinning) {
+                truck.spinAngle += 0.35;
+                truck.spinTimer--;
+                if (truck.spinTimer <= 0) {
+                    truck.isSpinning = false;
+                    truck.spinAngle = 0;
+                }
+            }
+
+            const maxSteer = canvas.width * 0.22;
+            let moveDir = 0;
+            if (keys.Left) moveDir -= 1;
+            if (keys.Right) moveDir += 1;
+
+            if (keys.Left !== prevLeft || keys.Right !== prevRight) {
+                if (moveDir !== 0) turnChangeCounter++;
+            }
+            prevLeft = keys.Left;
+            prevRight = keys.Right;
+
+            if (!truck.isSpinning) {
+                truck.targetLaneX += moveDir * 7.0;
+                truck.targetLaneX = Math.max(-maxSteer, Math.min(maxSteer, truck.targetLaneX));
+            }
+            truck.laneX += (truck.targetLaneX - truck.laneX) * 0.25;
+            truck.tilt = (truck.targetLaneX - truck.laneX) * 0.05;
+
+            if (Math.abs(truck.targetLaneX - truck.laneX) > 8 || isBoosting) {
+                tireTracks.push({
+                    x: truck.x + truck.laneX,
+                    y: truck.y + 30,
+                    alpha: 0.6
+                });
+
+                particles.push({
+                    x: truck.x + truck.laneX + (Math.random() - 0.5) * 30,
+                    y: truck.y + 40,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: Math.random() * 2 + 1,
+                    radius: Math.random() * 4 + 2,
+                    color: '#64748b',
+                    alpha: 0.8,
+                    life: 20
+                });
+            }
+
+            const now = Date.now();
+            const timeSinceLastDrop = now - lastCargoDropTime;
+
+            if (isBoosting && timeSinceLastDrop > 1600) {
+                lastCargoDropTime = now;
+                dropCargo("부스터 과속!");
+            }
+
+            if (turnChangeCounter > 4 && timeSinceLastDrop > 1100) {
+                turnChangeCounter = 0;
+                lastCargoDropTime = now;
+                dropCargo("급회전 흔들림!");
+            }
+
+            roadOffset = (roadOffset + currentSpeed * 2.2) % 40;
+            sideSceneryOffset = (sideSceneryOffset + currentSpeed * 1.5) % 120;
+            spawnEntitiesPattern();
+
+            const truckBounds = {
+                left: truck.x + truck.laneX - truck.width / 2 + 6,
+                right: truck.x + truck.laneX + truck.width / 2 - 6,
+                top: truck.y - truck.height / 2 + 8,
+                bottom: truck.y + truck.height / 2 - 8
+            };
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.y += currentSpeed * 1.5;
+                item.animFrame += 0.1;
+
+                const itemBounds = {
+                    left: truck.x + item.x - item.width / 2,
+                    right: truck.x + item.x + item.width / 2,
+                    top: item.y - item.height / 2,
+                    bottom: item.y + item.height / 2
+                };
+
+                if (!item.collected &&
+                    truckBounds.left < itemBounds.right &&
+                    truckBounds.right > itemBounds.left &&
+                    truckBounds.top < itemBounds.bottom &&
+                    truckBounds.bottom > itemBounds.top) {
+                    
+                    item.collected = true;
+                    sfx.playItemPickup();
+
+                    if (item.type === 'BOX') {
+                        if (cargoCount < INITIAL_CARGO) {
+                            cargoCount++;
+                            particles.push({
+                                x: truck.x + truck.laneX,
+                                y: truck.y - 40,
+                                text: "+1 이삿짐 복구! 📦",
+                                color: "#10b981",
+                                vy: -2,
+                                alpha: 1,
+                                life: 45
+                            });
+                        }
+                    } else if (item.type === 'SHIELD') {
+                        truck.hasShield = true;
+                        particles.push({
+                            x: truck.x + truck.laneX,
+                            y: truck.y - 40,
+                            text: "🛡️ 보호막 획득!",
+                            color: "#38bdf8",
+                            vy: -2,
+                            alpha: 1,
+                            life: 45
+                        });
+                    }
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                if (item.y > canvas.height + 60) {
+                    items.splice(i, 1);
+                }
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += (currentSpeed * 1.5) + obs.vy;
+                obs.x += obs.vx;
+                obs.animFrame += 0.1;
+
+                if (obs.type === 'BARREL') {
+                    if (Math.abs(obs.x) > maxSteer) obs.vx *= -1;
+                }
+
+                const obsBounds = {
+                    left: truck.x + obs.x - obs.width / 2,
+                    right: truck.x + obs.x + obs.width / 2,
+                    top: obs.y - obs.height / 2,
+                    bottom: obs.y + obs.height / 2
+                };
+
+                if (!obs.hit &&
+                    truckBounds.left < obsBounds.right &&
+                    truckBounds.right > obsBounds.left &&
+                    truckBounds.top < obsBounds.bottom &&
+                    truckBounds.bottom > obsBounds.top) {
+                    
+                    obs.hit = true;
+                    triggerScreenShake();
+
+                    if (obs.type === 'PUDDLE') {
+                        sfx.playScreech();
+                        truck.isSpinning = true;
+                        truck.spinTimer = 30;
+                        dropCargo("오일 미끄럼!");
+                    } else {
+                        sfx.playHit();
+                        dropCargo("장애물 충돌!");
+                    }
+
+                    for (let p = 0; p < 14; p++) {
+                        particles.push({
+                            x: truck.x + obs.x,
+                            y: obs.y,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8,
+                            color: obs.type === 'PUDDLE' ? '#38bdf8' : '#f59e0b',
+                            radius: Math.random() * 5 + 2,
+                            alpha: 1,
+                            life: 25
+                        });
+                    }
+                }
+
+                if (!obs.hit && !obs.nearMissed && obs.y > truck.y - 10 && obs.y < truck.y + 40) {
+                    const distX = Math.abs((truck.x + truck.laneX) - (truck.x + obs.x));
+                    if (distX < (truck.width / 2 + obs.width / 2 + 18)) {
+                        obs.nearMissed = true;
+                        nearMissCount++;
+                        sfx.playNearMiss();
+                        particles.push({
+                            x: truck.x + truck.laneX,
+                            y: truck.y - 50,
+                            text: "⚡ NEAR MISS!",
+                            color: "#f59e0b",
+                            vy: -2.5,
+                            alpha: 1,
+                            life: 40
+                        });
+                    }
+                }
+
+                if (obs.y > canvas.height + 100) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            for (let i = tireTracks.length - 1; i >= 0; i--) {
+                tireTracks[i].y += currentSpeed * 1.5;
+                tireTracks[i].alpha -= 0.02;
+                if (tireTracks[i].alpha <= 0 || tireTracks[i].y > canvas.height) {
+                    tireTracks.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                if (p.text) {
+                    p.y += p.vy;
+                    p.alpha -= 0.02;
+                } else {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= 1 / p.life;
+                }
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            for (let i = fallingCargos.length - 1; i >= 0; i--) {
+                const fc = fallingCargos[i];
+                fc.x += fc.vx;
+                fc.y += fc.vy;
+                fc.vy += 0.45;
+                fc.rotation += fc.vRot;
+                fc.alpha -= 0.015;
+                if (fc.alpha <= 0) fallingCargos.splice(i, 1);
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            const speedKmh = Math.round(truck.speed * 8);
+            speedTextEl.textContent = `${speedKmh} km/h`;
+            cargoCountEl.textContent = `${cargoCount}개`;
+            timerTextEl.textContent = `${Math.ceil(gameTime)}s`;
+            
+            if (truck.hasShield) {
+                shieldIndicatorEl.classList.remove('hidden');
+            } else {
+                shieldIndicatorEl.classList.add('hidden');
+            }
+
+            const progressRatio = Math.min(100, (distanceTraveled / GOAL_DISTANCE) * 100);
+            progressBarEl.style.width = `${progressRatio}%`;
+        }
+
+        function drawParallaxSideScenery(centerX, roadWidth) {
+            const leftMargin = centerX - roadWidth / 2;
+            const rightMargin = centerX + roadWidth / 2;
+
+            ctx.fillStyle = '#0f291e';
+            ctx.fillRect(0, 0, leftMargin - 8, canvas.height);
+            ctx.fillRect(rightMargin + 8, 0, canvas.width - rightMargin, canvas.height);
+
+            const spacing = 120;
+            for (let y = -spacing; y < canvas.height + spacing; y += spacing) {
+                const sy = y + sideSceneryOffset;
+
+                ctx.fillStyle = '#059669';
+                ctx.beginPath();
+                ctx.arc(leftMargin - 40, sy, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (Math.floor(y / spacing) % 2 === 0) {
+                    ctx.fillStyle = '#475569';
+                    ctx.fillRect(rightMargin + 25, sy - 15, 30, 30);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(rightMargin + 32, sy - 5, 8, 8);
+                } else {
+                    ctx.fillStyle = '#10b981';
+                    ctx.beginPath();
+                    ctx.arc(rightMargin + 40, sy, 24, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const roadWidth = canvas.width * 0.52;
+
+            drawParallaxSideScenery(centerX, roadWidth);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(centerX - roadWidth / 2, 0, roadWidth, canvas.height);
+
+            tireTracks.forEach(t => {
+                ctx.fillStyle = `rgba(15, 23, 42, ${t.alpha})`;
+                ctx.fillRect(t.x - 16, t.y, 8, 12);
+                ctx.fillRect(t.x + 8, t.y, 8, 12);
+            });
+
+            const stripeHeight = 30;
+            for (let y = -stripeHeight; y < canvas.height + stripeHeight; y += stripeHeight) {
+                const currY = y + roadOffset;
+                const isRed = Math.floor((y + roadOffset) / stripeHeight) % 2 === 0;
+                ctx.fillStyle = isRed ? '#ef4444' : '#f8fafc';
+                ctx.fillRect(centerX - roadWidth / 2 - 8, currY, 8, stripeHeight);
+                ctx.fillRect(centerX + roadWidth / 2, currY, 8, stripeHeight);
+            }
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 20]);
+            ctx.lineDashOffset = -roadOffset;
+            ctx.beginPath();
+            ctx.moveTo(centerX - roadWidth / 6, 0);
+            ctx.lineTo(centerX - roadWidth / 6, canvas.height);
+            ctx.moveTo(centerX + roadWidth / 6, 0);
+            ctx.lineTo(centerX + roadWidth / 6, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            items.forEach(item => {
+                const ix = centerX + item.x;
+                const iy = item.y;
+                const floatY = Math.sin(item.animFrame * 2) * 4;
+
+                ctx.save();
+                ctx.translate(ix, iy + floatY);
+
+                if (item.type === 'BOX') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(-16, -16, 32, 32);
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-16, -16, 32, 32);
+                    ctx.font = '16px "Jua"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('📦', 0, 6);
+                } else if (item.type === 'SHIELD') {
+                    ctx.fillStyle = '#0284c7';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.font = '16px "Jua"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🛡️', 0, 6);
+                }
+
+                ctx.restore();
+            });
+
+            const remainingDist = GOAL_DISTANCE - distanceTraveled;
+            if (remainingDist < 1200) {
+                const goalY = truck.y - (remainingDist / 2.5);
+                const checkSize = 15;
+                for (let gx = centerX - roadWidth / 2; gx < centerX + roadWidth / 2; gx += checkSize) {
+                    for (let gy = 0; gy < 30; gy += checkSize) {
+                        const isBlack = (Math.floor(gx / checkSize) + Math.floor(gy / checkSize)) % 2 === 0;
+                        ctx.fillStyle = isBlack ? '#0f172a' : '#f8fafc';
+                        ctx.fillRect(gx, goalY + gy, checkSize, checkSize);
+                    }
+                }
+            }
+
+            obstacles.forEach(obs => {
+                const ox = centerX + obs.x;
+                const oy = obs.y;
+
+                if (oy < 30 && (obs.type === 'SEDAN' || obs.type === 'TRUCK' || obs.type === 'BARREL')) {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = '700 16px "Jua", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🚨 위험!', ox, 35);
+                }
+
+                ctx.save();
+                ctx.translate(ox, oy);
+
+                if (obs.type === 'SEDAN' || obs.type === 'TRUCK') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.fillRect(-obs.width / 2 + 3, -obs.height / 2 + 5, obs.width, obs.height);
+
+                    ctx.fillStyle = obs.color;
+                    ctx.fillRect(-obs.width / 2, -obs.height / 2, obs.width, obs.height);
+
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillRect(-obs.width / 2 + 4, -obs.height / 2 + 10, obs.width - 8, 14);
+
+                    ctx.fillStyle = obs.vy < 0 ? '#fef08a' : '#ef4444';
+                    ctx.fillRect(-obs.width / 2 + 3, obs.height / 2 - 4, 8, 4);
+                    ctx.fillRect(obs.width / 2 - 11, obs.height / 2 - 4, 8, 4);
+                } else if (obs.type === 'BARREL') {
+                    ctx.rotate(obs.animFrame);
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(-18, -18, 36, 36);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillRect(-14, -14, 28, 28);
+                } else if (obs.type === 'BARRICADE') {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(-obs.width / 2, -10, 8, 20);
+                    ctx.fillRect(obs.width / 2 - 8, -10, 8, 20);
+
+                    const isOrange = Math.floor(obs.animFrame * 5) % 2 === 0;
+                    ctx.fillStyle = isOrange ? '#f97316' : '#f8fafc';
+                    ctx.fillRect(-obs.width / 2 + 4, -12, obs.width - 8, 12);
+
+                    ctx.fillStyle = Math.floor(obs.animFrame * 10) % 2 === 0 ? '#fbbf24' : '#78350f';
+                    ctx.beginPath();
+                    ctx.arc(0, -16, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (obs.type === 'PUDDLE') {
+                    ctx.fillStyle = '#0284c7';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, obs.width / 2, obs.height / 2, Math.sin(obs.animFrame) * 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.ellipse(-5, -2, obs.width / 4, obs.height / 4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (obs.type === 'CONE') {
+                    const bounceY = Math.abs(Math.sin(obs.animFrame * 3)) * 4;
+                    ctx.translate(0, -bounceY);
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -16);
+                    ctx.lineTo(-14, 14);
+                    ctx.lineTo(14, 14);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-8, -2, 16, 5);
+                }
+
+                ctx.restore();
+            });
+
+            ctx.save();
+            ctx.translate(truck.x + truck.laneX, truck.y);
+            ctx.rotate(truck.tilt + truck.spinAngle);
+
+            if (truck.hasShield) {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, truck.height / 2 + 8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.fillRect(-truck.width / 2 + 4, -truck.height / 2 + 10, truck.width, truck.height);
+
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(-truck.width / 2, -truck.height / 2, truck.width, truck.height - 24);
+
+            ctx.fillStyle = '#1d4ed8';
+            ctx.fillRect(-truck.width / 2 + 4, truck.height / 2 - 28, truck.width - 8, 24);
+            ctx.fillStyle = '#93c5fd';
+            ctx.fillRect(-truck.width / 2 + 8, truck.height / 2 - 22, truck.width - 16, 12);
+
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(-truck.width / 2 + 4, truck.height / 2 - 4, 10, 4);
+            ctx.fillRect(truck.width / 2 - 14, truck.height / 2 - 4, 10, 4);
+
+            const boxWidth = 26;
+            const boxHeight = 16;
+            for (let i = 0; i < cargoCount; i++) {
+                const row = Math.floor(i / 2);
+                const col = i % 2;
+                const bx = (col === 0 ? -boxWidth + 2 : 2);
+                const by = -truck.height / 2 + 10 + (row * (boxHeight - 2));
+
+                ctx.fillStyle = '#d97706';
+                ctx.fillRect(bx, by, boxWidth - 4, boxHeight - 4);
+                ctx.strokeStyle = '#78350f';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(bx, by, boxWidth - 4, boxHeight - 4);
+
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(bx + (boxWidth - 4) / 2 - 2, by, 4, boxHeight - 4);
+            }
+
+            ctx.restore();
+
+            fallingCargos.forEach(fc => {
+                ctx.save();
+                ctx.translate(fc.x, fc.y);
+                ctx.rotate(fc.rotation);
+                ctx.globalAlpha = fc.alpha;
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(-12, -8, 24, 16);
+                ctx.strokeStyle = '#451a03';
+                ctx.strokeRect(-12, -8, 24, 16);
+                ctx.restore();
+            });
+
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+
+                if (p.text) {
+                    ctx.font = '900 17px "Jua", sans-serif';
+                    ctx.fillStyle = p.color;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(p.text, p.x, p.y);
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+        }
+
+        let lastTime = performance.now();
+        function gameLoop(now) {
+            const delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            update(delta);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function() {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
