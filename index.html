@@ -181,7 +181,7 @@
         </p>
 
         <!-- Difficulty Quick Selector -->
-        <div class="flex items-center gap-2 mb-5">
+        <div class="flex items-center gap-2 mb-3">
           <span class="text-xs text-slate-400 font-medium mr-1">난이도:</span>
           <button id="diffEasyBtn" class="diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200">
             쉬움 (70초)
@@ -192,6 +192,13 @@
           <button id="diffHardBtn" class="diff-btn px-3 py-1 text-xs font-bold rounded-lg border bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200">
             하드 러시 (50초)
           </button>
+        </div>
+
+        <!-- Vehicle Color Quick Selector on Start Screen -->
+        <div class="flex items-center gap-2 mb-4 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+          <span class="text-xs text-slate-400 font-medium">🚚 차량 색상:</span>
+          <div id="startTruckColorPicker" class="flex items-center gap-2"></div>
+          <span id="startTruckColorLabel" class="text-xs font-bold text-amber-400 ml-1"></span>
         </div>
 
         <div class="grid grid-cols-2 gap-3 max-w-xs w-full mb-6 text-xs text-slate-300">
@@ -842,25 +849,61 @@
 
     // Truck Color Picker UI setup
     const truckColorPickerEl = document.getElementById('truckColorPicker');
+    const startTruckColorPickerEl = document.getElementById('startTruckColorPicker');
+    const startTruckColorLabelEl = document.getElementById('startTruckColorLabel');
+
     function setupTruckColorPicker() {
-      truckColorPickerEl.innerHTML = '';
-      Object.keys(TRUCK_COLOR_MAP).forEach((key) => {
-        const c = TRUCK_COLOR_MAP[key];
-        const isSelected = currentTruckColor === key;
-        const btn = document.createElement('button');
-        btn.className = `p-3 rounded-xl border flex flex-col items-center gap-2 transition cursor-pointer ${
-          isSelected ? 'border-amber-400 bg-slate-800 shadow-lg shadow-amber-500/10' : 'border-slate-800 bg-slate-950 hover:border-slate-700'
-        }`;
-        btn.innerHTML = `
-          <div class="w-8 h-8 rounded-full border border-white/20" style="background-color: ${c.hex};"></div>
-          <span class="text-xs font-bold ${isSelected ? 'text-amber-400' : 'text-slate-400'}">${c.name}</span>
-        `;
-        btn.addEventListener('click', () => {
-          currentTruckColor = key;
-          setupTruckColorPicker();
+      // 1. Settings tab picker
+      if (truckColorPickerEl) {
+        truckColorPickerEl.innerHTML = '';
+        Object.keys(TRUCK_COLOR_MAP).forEach((key) => {
+          const c = TRUCK_COLOR_MAP[key];
+          const isSelected = currentTruckColor === key;
+          const btn = document.createElement('button');
+          btn.className = `p-3 rounded-xl border flex flex-col items-center gap-2 transition cursor-pointer ${
+            isSelected ? 'border-amber-400 bg-slate-800 shadow-lg shadow-amber-500/10' : 'border-slate-800 bg-slate-950 hover:border-slate-700'
+          }`;
+          btn.innerHTML = `
+            <div class="w-8 h-8 rounded-full border border-white/20" style="background-color: ${c.hex};"></div>
+            <span class="text-xs font-bold ${isSelected ? 'text-amber-400' : 'text-slate-400'}">${c.name}</span>
+          `;
+          btn.addEventListener('click', () => {
+            currentTruckColor = key;
+            setupTruckColorPicker();
+          });
+          truckColorPickerEl.appendChild(btn);
         });
-        truckColorPickerEl.appendChild(btn);
-      });
+      }
+
+      // 2. Start Overlay quick picker
+      if (startTruckColorPickerEl) {
+        startTruckColorPickerEl.innerHTML = '';
+        Object.keys(TRUCK_COLOR_MAP).forEach((key) => {
+          const c = TRUCK_COLOR_MAP[key];
+          const isSelected = currentTruckColor === key;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.title = c.name;
+          btn.className = `w-7 h-7 rounded-full border border-white/20 transition-all cursor-pointer flex items-center justify-center ${
+            isSelected
+              ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110 shadow-lg'
+              : 'opacity-70 hover:opacity-100 hover:scale-105'
+          }`;
+          btn.style.backgroundColor = c.hex;
+          if (isSelected) {
+            btn.innerHTML = '<span class="text-white text-[10px] font-black leading-none">✓</span>';
+          }
+          btn.addEventListener('click', () => {
+            currentTruckColor = key;
+            setupTruckColorPicker();
+          });
+          startTruckColorPickerEl.appendChild(btn);
+        });
+      }
+
+      if (startTruckColorLabelEl) {
+        startTruckColorLabelEl.textContent = TRUCK_COLOR_MAP[currentTruckColor]?.name || '';
+      }
     }
     setupTruckColorPicker();
 
